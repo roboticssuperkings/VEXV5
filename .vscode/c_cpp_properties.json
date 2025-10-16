@@ -1,0 +1,35 @@
+{
+  "configurations": [
+    {
+      "name": "PROS Project",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "/Users/raghavm/SuperKings V5/v5 auton/include",
+        "/Users/raghavm/SuperKings V5/v5 auton - Dont use/include",
+        "/Users/raghavm/SuperKings V5/v5 auton Teamwork/include",
+        "/Users/raghavm/SuperKings V5/SBOT/include",
+        "/Users/raghavm/SuperKings V5/ruiguan/include"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "compilerPath": "/Users/raghavm/Library/Application Support/Code/User/globalStorage/sigbots.pros/install/pros-toolchain-macos/bin/arm-none-eabi-g++",
+      "cStandard": "gnu11",
+      "cppStandard": "gnu++20",
+      "intelliSenseMode": "gcc-arm",
+      "macFrameworkPath": [
+        "/System/Library/Frameworks"
+      ],
+      "browse": {
+        "path": [
+          "/Users/raghavm/SuperKings V5/ruiguan"
+        ],
+        "limitSymbolsToIncludedHeaders": true,
+        "databaseFilename": ""
+      }
+    }
+  ],
+  "version": 4
+}
