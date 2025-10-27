@@ -6,6 +6,7 @@
 #include "pros/ai_vision.hpp"
 #include "pros/misc.h"
 #include "pros/motors.h"
+#include "pros/rtos.h"
 #include "pros/rtos.hpp"
 #include "pros/screen.h"
 #include "pros/screen.hpp"
@@ -129,11 +130,7 @@ void initialize() {
             pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
             pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
             pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
-			pros::lcd::print(3,"X: %f", gps.get_position_x());
-			pros::lcd::print(4,"Y: %f", gps.get_position_y());
-			pros::lcd::print(5,"Heading: %f", gps.get_heading());
-			pros::screen::print(::TEXT_MEDIUM, 3, "X: %f", chassis.getPose().x);
-
+			
             // log position telemetry
             lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
             // delay to save resources
@@ -161,17 +158,192 @@ ASSET(example_txt); // '.' replaced with "_" to make c++ happy
  *
  * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
  */
+ void flowerScoring()
+{
+    chassis.setPose(0,0,0);
+    lowIntake.move_velocity(-600);
+
+   	chassis.moveToPoint(0, 15,1000, {.maxSpeed=75});
+
+    chassis.turnToHeading(37.5, 1000, {.maxSpeed = 100});
+
+    chassis.moveToPoint(12, 38,1000, {.maxSpeed = 50});
+
+    pros::delay(500);
+
+    chassis.turnToHeading(150, 1000, {.maxSpeed = 100});
+
+    chassis.moveToPoint(47, 5,1000, {.maxSpeed = 90 });
+
+    pros::delay(1000);
+
+    chassis.turnToHeading(180, 1000);
+
+    chassis.moveToPose(47, 29, 180, 2000, {.forwards = false}, false);
+
+    topintake.move_velocity(-600);
+
+}
+
+void scoreLoader()
+{
+    lowIntake.move_velocity(-600);
+
+    // Loader gathering
+    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
+    chassis.moveToPoint(47, 3,1000, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
+    chassis.moveToPoint(47, 3,1000, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
+
+    
+    chassis.moveToPose(47, 31, 180, 2000, {.forwards = false}, false);
+    topintake.move_velocity(-600);
+
+
+}
+
+void skill_1red_fullloader(){
+    int timeout = 500;
+    chassis.setPose(0,0,0);
+
+    lowIntake.move_velocity(-600);
+
+    chassis.moveToPoint(0, 11,timeout, {.maxSpeed=75});
+    chassis.turnToHeading(40, timeout);
+    chassis.moveToPoint(11, 28,timeout + 500, {.maxSpeed=75});
+    chassis.turnToHeading(120, timeout);
+    chassis.moveToPoint(47, 13,timeout+250, {.maxSpeed=75});
+
+    chassis.turnToHeading(180, timeout);
+
+    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
+    chassis.moveToPoint(47, 3,timeout, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
+    chassis.moveToPoint(47, 3,timeout, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
+
+    chassis.moveToPose(47, 31, 180, 2000, {.forwards = false}, false);
+    topintake.move_velocity(-600);
+    pros::delay(2000);
+}
+
+void moveToOtherSideFromWallSide(){
+    chassis.setPose(47,26,180);
+
+    chassis.moveToPoint(47, 13, 500);
+
+    chassis.turnToHeading(90, 500);
+
+    chassis.moveToPoint(47, 18, 500);
+
+    chassis.turnToHeading(20, 500);
+
+    chassis.moveToPoint(45, 31, 500);
+
+    chassis.turnToHeading(8, 500);
+
+    chassis.moveToPoint(47, 46, 1000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(0, 500);
+
+    chassis.moveToPoint(47, 90, 2000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(-35, 500);
+
+    chassis.moveToPoint(37, 100, 1000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(0, 500, {.maxSpeed=200});
+
+    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
+
+    // drop pnuematics 
+
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+
+    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
+
+
+    topintake.move_velocity(-600);
+
+    pros::delay(2000);
+
+
+
+
+
+
+}
+
+void moveFrom4to1(){
+
+    chassis.setPose(34,82,0);
+
+    chassis.moveToPoint(34, 91, 500);
+
+    chassis.turnToHeading(-90, 500);
+
+    chassis.moveToPoint(-54, 88, 3000, {.maxSpeed = 70});
+
+    chassis.turnToHeading(0, 1000);
+
+    chassis.moveToPoint(-61, 77,3000, {.forwards= false, .maxSpeed = 30});
+
+    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
+    chassis.moveToPoint(-61, 110,750, {.forwards= false, .maxSpeed = 70});
+    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
+    chassis.moveToPoint(-61, 110,750, {.forwards= false, .maxSpeed = 70});
+    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
+
+
+    chassis.moveToPoint(-61, 73,1000, {.forwards= false, .maxSpeed = 60});
+
+    topintake.move_velocity(-600);
+
+
+}
+
+
+void moveToOtherSideFromFlowerSide(){
+
+    chassis.setPose(47,26,180);
+
+
+}
+
+
+
 void autonomous() {
-	chassis.setPose(0,0,0);
-   	chassis.moveToPoint(6, 53,2000);
+    //flowerScoring();
+    topintake.move_velocity(0);
+    chassis.setPose(47,29,180);
+    scoreLoader();
+        
 } 
+
+void skillautonomous() {
+
+    skill_1red_fullloader();
+    moveToOtherSideFromWallSide();
+    //moveToOtherSideFromFlowerSide();
+
+    //moveToOtherSideFromWallSide();
+
+    moveFrom4to1();
+}
+
+
 
 /**
  * Runs in driver control
  */
 void opcontrol() {
-	//autonomous();
-	//return;
+	skillautonomous();
+	return;
 
     // controller
     // loop to continuously update motors
