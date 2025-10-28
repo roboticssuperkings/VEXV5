@@ -247,11 +247,11 @@ void moveToOtherSideFromWallSide(){
 
     chassis.turnToHeading(0, 500);
 
-    chassis.moveToPoint(47, 90, 2000, {.maxSpeed = 60});
+    chassis.moveToPoint(47, 88, 2000, {.maxSpeed = 60});
 
     chassis.turnToHeading(-35, 500);
 
-    chassis.moveToPoint(37, 100, 1000, {.maxSpeed = 60});
+    chassis.moveToPoint(37, 98, 1000, {.maxSpeed = 60});
 
     chassis.turnToHeading(0, 500, {.maxSpeed=200});
 
