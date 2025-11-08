@@ -247,11 +247,11 @@ void moveToOtherSideFromWallSide(){
 
     chassis.turnToHeading(0, 500);
 
-    chassis.moveToPoint(47, 88, 2000, {.maxSpeed = 60});
+    chassis.moveToPoint(47, 90, 2000, {.maxSpeed = 60});
 
     chassis.turnToHeading(-35, 500);
 
-    chassis.moveToPoint(37, 98, 1000, {.maxSpeed = 60});
+    chassis.moveToPoint(37, 100, 1000, {.maxSpeed = 60});
 
     chassis.turnToHeading(0, 500, {.maxSpeed=200});
 
@@ -278,6 +278,70 @@ void moveToOtherSideFromWallSide(){
 
 
 }
+
+void scoringandGoingBack()
+{
+    // drop pnuematics 
+
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
+    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+
+    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
+
+
+    topintake.move_velocity(-600);
+
+    pros::delay(2000);
+}
+
+void moveAlongYAxis(int startingY, int EndPointY, int startingX, int EndingX,int directionFlag = 1){
+    int theta[7] = {180,90,20,8,0,-35,0};
+    int thetaCorrection = 0 ;
+    if (directionFlag == -1){
+        thetaCorrection = 180;
+    }
+    int directionYFlag = 1;
+    if (startingY > EndPointY){
+        directionYFlag = -1;
+    }
+    int directionXFlag = 1;
+    if (startingX > EndingX){
+        directionXFlag = -1;
+    }
+    chassis.setPose(startingX,startingY,theta[0] + thetaCorrection);
+
+    chassis.moveToPoint(startingX, startingY - (directionYFlag * 13), 500);
+
+    chassis.turnToHeading(theta[1]+thetaCorrection, 500);
+
+    chassis.moveToPoint(startingX, startingY - (directionYFlag * 8), 500);
+
+    chassis.turnToHeading(theta[2]+thetaCorrection, 500);
+
+    chassis.moveToPoint(startingX + ( directionXFlag - 2 ), startingY + (directionYFlag * 5), 500);
+
+    chassis.turnToHeading(theta[3]+thetaCorrection, 500);
+
+    chassis.moveToPoint(startingX, startingY + (directionYFlag * 20), 1000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(theta[4]+thetaCorrection, 500);
+
+    chassis.moveToPoint(startingX, startingY + (directionYFlag * 64), 2000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(theta[5]+thetaCorrection, 500);
+
+    chassis.moveToPoint(startingX + ( directionXFlag * 10), startingY + (directionYFlag * 74), 1000, {.maxSpeed = 60});
+
+    chassis.turnToHeading(theta[6]+thetaCorrection, 500, {.maxSpeed=200});
+
+    chassis.moveToPoint(startingX + ( directionXFlag * 13), EndPointY,1000, {.forwards= false, .maxSpeed = 90});
+    scoringandGoingBack();
+}
+
+
 
 void moveFrom4to1(){
 
@@ -328,12 +392,16 @@ void autonomous() {
 void skillautonomous() {
 
     skill_1red_fullloader();
-    moveToOtherSideFromWallSide();
-    //moveToOtherSideFromFlowerSide();
+      //moveToOtherSideFromWallSide(); Not needed
+    //moveToOtherSideFromFlowerSide(); Not needed
+    //moveToOtherSideFromWallSide(); Not Needed
+    moveAlongYAxis(26, 82,47, 34);
+    //moveFrom4to1();
+    //moveAlongYAxis(73, 16,-61, -48);
+    //chassis.setPose(-61,73,0);
 
-    //moveToOtherSideFromWallSide();
 
-    moveFrom4to1();
+    
 }
 
 
