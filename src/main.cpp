@@ -225,7 +225,7 @@ void skill_1red_fullloader(){
 
     chassis.moveToPose(47, 31, 180, 2000, {.forwards = false}, false);
     topintake.move_velocity(-600);
-    pros::delay(2000);
+    pros::delay(1800);
 }
 
 void moveToOtherSideFromWallSide(){
@@ -270,7 +270,7 @@ void moveToOtherSideFromWallSide(){
 
     topintake.move_velocity(-600);
 
-    pros::delay(2000);
+    pros::delay(1800);
 
 
 
@@ -294,7 +294,7 @@ void scoringandGoingBack()
 
     topintake.move_velocity(-600);
 
-    pros::delay(2000);
+    pros::delay(1800);
 }
 
 void moveAlongYAxis(int startingY, int EndPointY, int startingX, int EndingX,int directionFlag = 1){
