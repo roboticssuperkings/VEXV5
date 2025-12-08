@@ -2,6 +2,7 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/chassis.hpp"
 #include "lemlib/chassis/trackingWheel.hpp"
+#include "pros/abstract_motor.hpp"
 #include "pros/adi.hpp"
 #include "pros/ai_vision.hpp"
 #include "pros/misc.h"
@@ -26,40 +27,44 @@ pros::MotorGroup leftMotors({-12,-1,11}, pros::MotorGearset::blue); // left moto
 pros::MotorGroup rightMotors({10, 19, -20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 
-pros::Motor lowIntake(13,pros::MotorGearset::blue);
-pros::Motor topintake(14,pros::MotorGearset::rpm_200);
+pros::Motor lowIntake(3,pros::MotorGearset::blue);
+pros::Motor topintake(2,pros::MotorGearset::rpm_200);
+pros::Motor Outtake(9,pros::MotorGearset::rpm_200);
 pros::GPS gps(17);
 pros::ADIDigitalOut piston('G');
-pros::ADIDigitalOut piston1('H');
+pros::ADIDigitalOut piston1('C');
+pros::ADIDigitalOut piston2('H');
+
+
 
 
 
 // Inertial Sensor on port 13
-pros::Imu imu(2);
+pros::Imu imu(8);               
 
 // tracking wheels. 
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
-pros::Rotation horizontalEnc(15);
+// pros::Rotation horizontalEnc(15);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
-pros::Rotation verticalEnc(-16);
+pros::Rotation verticalEnc(4);
 // horizontal tracking wheel. 2.75" diameter, 5.75" offset, back of the robot (negative)
-lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, 4.5);
+//lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, 4.5);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, 6.5);
+lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, 5.5);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
                               &rightMotors, // right motor group
-                              16, // 10 inch track width
+                              13.5, // 10 inch track width
                               lemlib::Omniwheel::NEW_275, // using new 4" omnis
                               600, // drivetrain rpm is 360
-                              6 // horizontal drift is 2. If we had traction wheels, it would have been 8
+                              8 // horizontal drift is 2. If we had traction wheels, it would have been 8
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(6, // proportional gain (kP)
+lemlib::ControllerSettings linearController(3.5, // proportional gain (kP)
                                             0, // integral gain (kI)
-                                            40, // derivative gain (kD)
+                                            0, // derivative gain (kD)
                                             0, // anti windup
                                             0, // small error range, in inches
                                             0, // small error range timeout, in milliseconds
@@ -69,9 +74,9 @@ lemlib::ControllerSettings linearController(6, // proportional gain (kP)
 );
 
 // angular motion controller
-lemlib::ControllerSettings angularController(1.5, // proportional gain (kP)
+lemlib::ControllerSettings angularController(5, // proportional gain (kP)
                                              0, // integral gain (kI)
-                                             10, // derivative gain (kD)
+                                             45, // derivative gain (kD)
                                              0, // anti windup
                                              0, // small error range, in degrees
                                              0, // small error range timeout, in milliseconds
@@ -83,7 +88,7 @@ lemlib::ControllerSettings angularController(1.5, // proportional gain (kP)
 //sensors for odometry
 lemlib::OdomSensors sensors(&vertical, // vertical tracking wheel
                             nullptr, // vertical tracking wheel 2, set to nullptr as we don't have a second one
-                            &horizontal, // horizontal tracking wheel
+                            nullptr, // horizontal tracking wheel
                             nullptr, // horizontal tracking wheel 2, set to nullptr as we don't have a second one
                             &imu // inertial sensor
 );
@@ -112,6 +117,8 @@ lemlib::Chassis chassis(drivetrain, linearController, angularController, sensors
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
+
+    piston.set_value(true);
     pros::lcd::initialize(); // initialize brain screen
     chassis.calibrate(); // calibrate sensors
 
@@ -142,276 +149,677 @@ void initialize() {
 /**
  * Runs while the robot is disabled
  */
-void disabled() {}
+void disabled() {
+
+    piston.set_value(true);
+}
+
 
 /**
  * runs after initialize if the robot is connected to field control
  */
-void competition_initialize() {}
+void competition_initialize() {
+
+    piston.set_value(true);
+}
 
 // get a path used for pure pursuit
 // this needs to be put outside a function
 ASSET(example_txt); // '.' replaced with "_" to make c++ happy
 
-/**
- * Runs during auto
- *
- * This is an example autonomous routine which demonstrates a lot of the features LemLib has to offer
- */
- void flowerScoring()
-{
-    chassis.setPose(0,0,0);
+
+void intakeblocks() {
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
+
+}
+
+void highgoalscoring(){
+
+
+    piston1.set_value(true);
+    topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200);
+
+}
+
+void midgoalscoring(){
+    piston1.set_value(false);
+    topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(-200); 
+
+}
+
+void lowgoalscoring(){
+    piston1.set_value(false);
+
+    topintake.move_velocity(-200); 
     lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
+}
 
-   	chassis.moveToPoint(0, 15,1000, {.maxSpeed=75});
+void hoodup(){
 
-    chassis.turnToHeading(37.5, 1000, {.maxSpeed = 100});
+    piston1.set_value(true);
 
-    chassis.moveToPoint(12, 38,1000, {.maxSpeed = 50});
+}
 
-    pros::delay(500);
+void hooddown(){
 
-    chassis.turnToHeading(150, 1000, {.maxSpeed = 100});
+    piston1.set_value(false);
 
-    chassis.moveToPoint(47, 5,1000, {.maxSpeed = 90 });
+}
+
+
+
+void rightlong(){
+    chassis.setPose(0,0,0);
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
+
+    chassis.moveToPoint(0, 34,1000,{.maxSpeed=100});
+
+    chassis.turnToHeading(90, 500,{.maxSpeed=100});
+  
+    piston2.set_value(true);
+
+
+    chassis.moveToPose(60, 40,90, 1250,{.maxSpeed=1000});
+
+
+    chassis.moveToPoint(-20, 40,900,{.forwards=false,.maxSpeed=1000});
+
+    pros::delay(750);
+
+    piston1.set_value(true);
+	topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    piston2.set_value(false);
+
+}
+void rightlongtomiddle(){
+
+
+
+    pros::delay(2000);
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
+
+    chassis.moveToPoint(-2, 39, 750,{.maxSpeed=100});
+
+    chassis.turnToHeading(210, 500);
+
+    chassis.moveToPoint(-12.8, 7.1, 1000,{.maxSpeed=100});
+    pros::delay(750);
+    piston2.set_value(true);
+    chassis.turnToHeading(240, 300);
+
+    chassis.moveToPoint(-28, -6, 800,{.maxSpeed=100});
+
+    piston2.set_value(false);
+
+
+    piston1.set_value(false);
+
+    pros::delay(750);
+
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-200);
+    Outtake.move_velocity(-200); 
+
+    pros::delay(1500);
+
+
+
+    chassis.moveToPoint(-9, 19, 800,{.forwards=false,.maxSpeed=100});
+
+
+    chassis.turnToHeading(90,500);
+
+    piston.set_value(true);
+
+    chassis.moveToPoint(-35, 29, 800,{.forwards=false,.maxSpeed=100});
+
+    piston.set_value(false);
+
+
+    // chassis.moveToPoint(-13, 6,750,{.forwards=false,.maxSpeed=100});
+
+    // topintake.move_velocity(200);   
+    // lowIntake.move_velocity(600);
+    // Outtake.move_velocity(200); 
+    // piston1.set_value(false);
+
+
+    // chassis.turnToHeading(180, 500);
+
+    // chassis.moveToPoint(-13, -37.5, 1000,{.maxSpeed=100});
+    // pros::delay(600);
+    // piston2.set_value(true);
+
+
+    //////////////////
+
+    //chassis.moveToPoint(-9.7, -40.3, 1000,{.maxSpeed=50});
+
+
+    
+
+
+
+    // piston1.set_value(false);
+
+    // topintake.move_velocity(-200); 
+    // lowIntake.move_velocity(-600);
+    // Outtake.move_velocity(-200); 
+
+    // pros::delay(750);
+
+
+
+    // pros::delay(1250);
+
+
+    
+
+
+}
+
+void middletoleftlong() {
+
+
+    
+
+
+
+    chassis.turnToHeading(125.4, 500);
+
+
+    chassis.moveToPoint(10, -56, 1000,{.maxSpeed=100});
+    chassis.turnToHeading(90, 500,{.maxSpeed=100});
+
+
+
+    chassis.moveToPoint(30, -52, 1000,{.maxSpeed=100});
+
+
+
+
+
+
+
+    chassis.moveToPoint(-13, -54, 1500,{.forwards=false,.maxSpeed=100});
+
+    pros::delay(750);
+
+
+    piston1.set_value(true);
+	topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    piston2.set_value(false);
+
+
+}
+
+void sevenballright(){
+
+    chassis.setPose(0,0,0);
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
+
+    chassis.moveToPoint(0, 12.5, 300);
+    chassis.turnToHeading(25,300);
+
+    chassis.moveToPoint(10.5, 32.7, 1500,{.maxSpeed=30});
+    pros::delay(1000);
+    piston2.set_value(true);
+
+    chassis.turnToHeading(141.7,500);
+
+    chassis.moveToPoint(41.9, 11, 1000,{.maxSpeed=70});
+
+    chassis.turnToHeading(180,500);
+
+
+
+
+    chassis.moveToPoint(42.4, -20, 1300,{.maxSpeed=1000});
+
+    chassis.moveToPoint(42.0, 25, 1000,{.forwards = false,.maxSpeed=70});
+
+    pros::delay(750);
+
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(true);
 
     pros::delay(1000);
 
-    chassis.turnToHeading(180, 1000);
 
-    chassis.moveToPose(47, 29, 180, 2000, {.forwards = false}, false);
 
-    topintake.move_velocity(-600);
-
-}
-
-void scoreLoader()
-{
+    topintake.move_velocity(-200); 
     lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
 
-    // Loader gathering
-    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
-    chassis.moveToPoint(47, 3,1000, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
-    chassis.moveToPoint(47, 3,1000, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(47, -2,1000, {.maxSpeed = 90 });
+    pros::delay(250);
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    pros::delay(1250);
+
+    piston1.set_value(false);
+
+
+    chassis.moveToPoint(43.8, 2, 500);
+    chassis.turnToHeading(138, 500);
+
+    chassis.moveToPoint(33.1, 23.5, 750,{.forwards=false});
+
+    chassis.turnToHeading(180, 750);
+    piston.set_value(false);
+
+    chassis.moveToPoint(34, 42, 2000,{.forwards=false,.maxSpeed=100});
+    
+
+
+
+
 
     
-    chassis.moveToPose(47, 31, 180, 2000, {.forwards = false}, false);
-    topintake.move_velocity(-600);
+
+    
+
+    //piston.set_value(false);
+
+
 
 
 }
 
-void skill_1red_fullloader(){
-    int timeout = 500;
+void skillsfirstgoal(){
+
     chassis.setPose(0,0,0);
 
-    lowIntake.move_velocity(-600);
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
 
-    chassis.moveToPoint(0, 11,timeout, {.maxSpeed=75});
-    chassis.turnToHeading(40, timeout);
-    chassis.moveToPoint(11, 28,timeout + 500, {.maxSpeed=75});
-    chassis.turnToHeading(120, timeout);
-    chassis.moveToPoint(47, 13,timeout+250, {.maxSpeed=75});
+    chassis.moveToPoint(0, 11.5, 300);
+    chassis.turnToHeading(90,500);
 
-    chassis.turnToHeading(180, timeout);
 
-    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
-    chassis.moveToPoint(47, 3,timeout, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
-    chassis.moveToPoint(47, 3,timeout, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(47, -2,timeout, {.maxSpeed = 90 });
+    chassis.moveToPoint(39, 13, 1500,{.maxSpeed=50});
 
-    chassis.moveToPose(47, 31, 180, 2000, {.forwards = false}, false);
-    topintake.move_velocity(-600);
-    pros::delay(1800);
-}
+    chassis.turnToHeading(180,1000);
 
-void moveToOtherSideFromWallSide(){
-    chassis.setPose(47,26,180);
+    piston2.set_value(true);
 
-    chassis.moveToPoint(47, 13, 500);
+    pros::delay(500);
+
+    //start first scraping
+    chassis.moveToPoint(42, -20, 3000,{.maxSpeed=1000});
+
+    //come back from first goal scraping
+
+
+    chassis.moveToPoint(42, 6.7, 1000,{.forwards = false,.maxSpeed=50});
+
+    pros::delay(1000);
+
+
+
+    piston2.set_value(false);
 
     chassis.turnToHeading(90, 500);
 
-    chassis.moveToPoint(47, 18, 500);
+    chassis.moveToPoint(53, 11, 750);
 
-    chassis.turnToHeading(20, 500);
 
-    chassis.moveToPoint(45, 31, 500);
+    chassis.turnToHeading(11, 750);
 
-    chassis.turnToHeading(8, 500);
+    chassis.moveToPoint(47, 23,750);
 
-    chassis.moveToPoint(47, 46, 1000, {.maxSpeed = 60});
+    chassis.turnToHeading(0, 750);
+
+
+
+    // ally stretch
+    chassis.moveToPoint(46, 87,2500,{.maxSpeed=60});
+
+
+
+    chassis.turnToHeading(-45,500);
+    chassis.moveToPoint(33.6, 90,1000,{.maxSpeed=60});
 
     chassis.turnToHeading(0, 500);
 
-    chassis.moveToPoint(47, 90, 2000, {.maxSpeed = 60});
 
-    chassis.turnToHeading(-35, 500);
+    chassis.moveToPoint(33, 73,1000,{.forwards=false,.maxSpeed=60});
 
-    chassis.moveToPoint(37, 100, 1000, {.maxSpeed = 60});
+    //first scoring
 
-    chassis.turnToHeading(0, 500, {.maxSpeed=200});
-
-    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
-
-    // drop pnuematics 
-
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
-    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
-    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
-
-    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
-
-
-    topintake.move_velocity(-600);
-
-    pros::delay(1800);
+    pros::delay(750);
 
 
 
 
 
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
 
-}
+    pros::delay(250);
 
-void scoringandGoingBack()
-{
-    // drop pnuematics 
+    //open the gate 
+    hoodup();
 
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
-    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
-    chassis.moveToPoint(34, 105,500, {.forwards= false, .maxSpeed = 90});
-    chassis.moveToPoint(34, 108,500, {.maxSpeed = 90 });
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
 
-    chassis.moveToPoint(34, 82,1000, {.forwards= false, .maxSpeed = 90});
+    pros::delay(1500);
 
+    //scrapper up
+    piston2.set_value(true);
 
-    topintake.move_velocity(-600);
+    pros::delay(500);
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
+    pros::delay(250);
 
-    pros::delay(1800);
-}
+    hooddown();
 
-void moveAlongYAxis(int startingY, int EndPointY, int startingX, int EndingX,int directionFlag = 1){
-    int theta[7] = {180,90,20,8,0,-35,0};
-    int thetaCorrection = 0 ;
-    if (directionFlag == -1){
-        thetaCorrection = 180;
-    }
-    int directionYFlag = 1;
-    if (startingY > EndPointY){
-        directionYFlag = -1;
-    }
-    int directionXFlag = 1;
-    if (startingX > EndingX){
-        directionXFlag = -1;
-    }
-    chassis.setPose(startingX,startingY,theta[0] + thetaCorrection);
+    intakeblocks();
 
-    chassis.moveToPoint(startingX, startingY - (directionYFlag * 13), 500);
+    // second scrapping 
+    chassis.moveToPoint(32, 130, 3000,{.maxSpeed=70});
 
-    chassis.turnToHeading(theta[1]+thetaCorrection, 500);
-
-    chassis.moveToPoint(startingX, startingY - (directionYFlag * 8), 500);
-
-    chassis.turnToHeading(theta[2]+thetaCorrection, 500);
-
-    chassis.moveToPoint(startingX + ( directionXFlag - 2 ), startingY + (directionYFlag * 5), 500);
-
-    chassis.turnToHeading(theta[3]+thetaCorrection, 500);
-
-    chassis.moveToPoint(startingX, startingY + (directionYFlag * 20), 1000, {.maxSpeed = 60});
-
-    chassis.turnToHeading(theta[4]+thetaCorrection, 500);
-
-    chassis.moveToPoint(startingX, startingY + (directionYFlag * 64), 2000, {.maxSpeed = 60});
-
-    chassis.turnToHeading(theta[5]+thetaCorrection, 500);
-
-    chassis.moveToPoint(startingX + ( directionXFlag * 10), startingY + (directionYFlag * 74), 1000, {.maxSpeed = 60});
-
-    chassis.turnToHeading(theta[6]+thetaCorrection, 500, {.maxSpeed=200});
-
-    chassis.moveToPoint(startingX + ( directionXFlag * 13), EndPointY,1000, {.forwards= false, .maxSpeed = 90});
-    scoringandGoingBack();
-}
+    chassis.moveToPoint(33, 75,1000,{.forwards=false,.maxSpeed=60});
 
 
 
-void moveFrom4to1(){
-
-    chassis.setPose(34,82,0);
-
-    chassis.moveToPoint(34, 91, 500);
-
-    chassis.turnToHeading(-90, 500);
-
-    chassis.moveToPoint(-54, 88, 3000, {.maxSpeed = 70});
-
-    chassis.turnToHeading(0, 1000);
-
-    chassis.moveToPoint(-61, 77,3000, {.forwards= false, .maxSpeed = 30});
-
-    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
-    chassis.moveToPoint(-61, 110,750, {.forwards= false, .maxSpeed = 70});
-    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
-    chassis.moveToPoint(-61, 110,750, {.forwards= false, .maxSpeed = 70});
-    chassis.moveToPoint(-61, 115,750, {.maxSpeed = 70 });
 
 
-    chassis.moveToPoint(-61, 73,1000, {.forwards= false, .maxSpeed = 60});
-
-    topintake.move_velocity(-600);
+    pros::delay(750);
 
 
-}
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    hoodup();
 
-
-void moveToOtherSideFromFlowerSide(){
-
-    chassis.setPose(47,26,180);
-
-
-}
+    pros::delay(1000);
 
 
 
-void autonomous() {
-    //flowerScoring();
-    topintake.move_velocity(0);
-    chassis.setPose(47,29,180);
-    scoreLoader();
-        
-} 
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
 
-void skillautonomous() {
+    pros::delay(250);
 
-    skill_1red_fullloader();
-      //moveToOtherSideFromWallSide(); Not needed
-    //moveToOtherSideFromFlowerSide(); Not needed
-    //moveToOtherSideFromWallSide(); Not Needed
-    moveAlongYAxis(26, 82,47, 34);
-    //moveFrom4to1();
-    //moveAlongYAxis(73, 16,-61, -48);
-    //chassis.setPose(-61,73,0);
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    pros::delay(1250);
+
+
+    piston2.set_value(false);
+
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
+
+    pros::delay(400);
+
+    hooddown();
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+
+    chassis.moveToPoint(32, 90,1000,{.maxSpeed=60});
+
+    chassis.moveToPoint(32, 50,1000,{.forwards=false,.maxSpeed=50});
+
 
 
     
+    hoodup();
+    chassis.moveToPoint(32, 90,1000,{.maxSpeed=60});
+
+
+
+
+    chassis.turnToHeading(-90, 1000);
+    hooddown();
+
+
+    chassis.moveToPoint(-56, 90,2000,{.maxSpeed=90});
+    chassis.turnToHeading(0, 500);
+
+    piston2.set_value(true);
+    /// x = -69
+    chassis.moveToPoint(-49, 120,3000,{.maxSpeed=80});
+
+
+
+    chassis.moveToPoint(-62, 93,1000,{.forwards=false,.maxSpeed=50});
+
+
+
+    chassis.turnToHeading(-90, 500);
+
+    piston2.set_value(false);
+
+
+    chassis.moveToPoint(-69, 88,500,{.maxSpeed=50});
+
+    chassis.turnToHeading(180, 750);
+
+
+    chassis.moveToPoint(-65, 50,2000,{.maxSpeed=80});
+
+    chassis.turnToHeading(170, 750);
+
+    chassis.moveToPoint(-62, 13,2000,{.maxSpeed=80});
+
+
+
+
+    chassis.turnToHeading(-235, 500);
+    // /////////
+
+    chassis.moveToPoint(-52, 32,500,{.maxSpeed=80});
+
+    chassis.turnToHeading(-180, 500);
+
+
+
+    chassis.moveToPoint(-49, 25,1000,{.forwards=false,.maxSpeed=50}); // Scoring 
+
+    pros::delay(500);
+
+    piston1.set_value(true);
+    topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+
+
+    pros::delay(2000);
+
+
+    topintake.move_velocity(200);   
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+    piston1.set_value(false);
+
+    piston2.set_value(true);
+
+    chassis.moveToPoint(-49, -20,3000,{.maxSpeed=80});
+
+    chassis.moveToPoint(-49, 40,1000,{.forwards=false,.maxSpeed=50});
+    pros::delay(750);
+
+
+    piston1.set_value(true);
+    topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    pros::delay(2000);
+
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+    Outtake.move_velocity(-200); 
+
+    pros::delay(400);
+
+    topintake.move_velocity(200); 
+    lowIntake.move_velocity(600);
+    Outtake.move_velocity(200); 
+
+    pros::delay(1000);
+
+
+    
+
+    piston2.set_value(false);
+
+
+    chassis.moveToPoint(-49, 16,3000,{.maxSpeed=80});
+
+
+    chassis.turnToHeading(90, 500);
+
+    chassis.moveToPoint(-16, 19,1500,{.maxSpeed=80});
+
+    chassis.turnToHeading(180, 500);
+
+    chassis.moveToPoint(-16, 40,500,{.forwards=false,.maxSpeed=50});
+
+    chassis.moveToPoint(-16, -35,4000,{.maxSpeed=500000});
+
+
+
+
+
+
+
+
+
+
+
+    // chassis.moveToPoint(20, 89,1000,{.maxSpeed=60});
+
+    // chassis.turnToHeading(-180, 1000);
+
+
+    // chassis.moveToPoint(20, 5,4000,{.maxSpeed=80});
+
+
+    // chassis.turnToHeading(-90,1000);
+
+    // chassis.moveToPoint(-12, 3,4000,{.maxSpeed=80});
+    // chassis.turnToHeading(-180,1000);
+
+    // chassis.moveToPoint(-8, 14,1000,{.forwards= false,.maxSpeed=80});
+    // chassis.moveToPoint(-7, -200,2000,{.maxSpeed=1000000});
+
+    
+
+
+
 }
 
+void solopp(){
+    //rightlong();
+    //rightlongtomiddle();
+    // middletoleftlong();
+
+    //sevenballright();
+
+    skillsfirstgoal();
 
 
+}
+
+void autonomous() {
+
+    solopp();
+
+
+    // chassis.moveToPoint(21.85, -28, 2000,{.forwards = false, .minSpeed=60});
+    // piston1.set_value(true);
+    // topintake.move_velocity(200); 
+    // lowIntake.move_velocity(600);
+    // Outtake.move_velocity(200); 
+
+    // piston2.set_value(false);
+    // pros::delay(1000);
+
+
+    // topintake.move_velocity(200);   
+    // lowIntake.move_velocity(600);
+    // Outtake.move_velocity(200); 
+    // piston1.set_value(false);
+
+    // chassis.turnToHeading(180, 500);
+
+
+    // chassis.turnToHeading(90, 1000,{.minSpeed=50});
+
+    // chassis.moveToPoint(16, 42,  2000,{.minSpeed=75});x
+    // pros::delay(2000);
+    // chassis.moveToPoint(7, 42,  2000, {.forwards=false,.minSpeed=50});
+
+    // chassis.turnToHeading(0, 1000,{.minSpeed=50});
+
+    // chassis.moveToPoint(0, 43,  2000);
+
+
+
+    // //chassis.moveToPose(-8, 43,0, 3000);
+    // chassis.turnToHeading(-90, 1000,{.minSpeed=30});
+
+    // chassis.moveToPose(-77, 35,-90,  2000,{.minSpeed=75});
+
+
+    // chassis.turnToHeading(-149, 1000,{.minSpeed=50});
+
+}
 /**
  * Runs in driver control
  */
+int pistonvalue = true;
 void opcontrol() {
-	skillautonomous();
-	return;
+    
+
 
     // controller
     // loop to continuously update motors
@@ -427,44 +835,70 @@ void opcontrol() {
 
 
 		if (controller.get_digital(DIGITAL_L1)) {
-			lowIntake.move_velocity(600); // This is 100 because it's a 100rpm motor
+
+            piston1.set_value(false);
+			topintake.move_velocity(200); 
+            lowIntake.move_velocity(600);
+            Outtake.move_velocity(-200); 
+           
+
 		}
 		else if (controller.get_digital(DIGITAL_L2)) {
-			lowIntake.move_velocity(-600);
-		}
-		else {
-			lowIntake.move_velocity(0);
-		}
-		
 
-		if (controller.get_digital(DIGITAL_R1)) {
-			topintake.move_velocity(200); 
+			topintake.move_velocity(200);   
+            lowIntake.move_velocity(600);
+            Outtake.move_velocity(200); 
+            piston1.set_value(false);
+
+		}
+        else if (controller.get_digital(DIGITAL_R1)) {
+
+
+            piston1.set_value(false);
+
+			topintake.move_velocity(-200); 
+            lowIntake.move_velocity(-600);
+            Outtake.move_velocity(-200); 
 		}
 		else if (controller.get_digital(DIGITAL_R2)) {
-			topintake.move_velocity(-200);
+
+            piston1.set_value(true);
+			topintake.move_velocity(200); 
+            lowIntake.move_velocity(600);
+            Outtake.move_velocity(200); 
+
 		}
 		else {
-			topintake.move_velocity(0);
+			topintake.move_velocity(0); 
+            lowIntake.move_velocity(0);
+            Outtake.move_velocity(0);
 		}
-
-
-
+        
 		if (controller.get_digital(DIGITAL_UP)) {
-			piston.set_value(true);
+
+            piston.set_value(pistonvalue);
+            pistonvalue = !pistonvalue;
+            pros::delay(250);
+
 		}
-		else if (controller.get_digital(DIGITAL_DOWN)) {
+		if (controller.get_digital(DIGITAL_DOWN)) {
 			piston.set_value(false);
 		}
+
+	    if (controller.get_digital(DIGITAL_X)) {
+			piston2.set_value(true);
+		}
+		if (controller.get_digital(DIGITAL_B)) {
+
+            piston2.set_value(false);
+            
+        }
 
 		
 		pros::delay(2);
 
-		
-
-
     }
 
-	
 }
 
- 
+	
