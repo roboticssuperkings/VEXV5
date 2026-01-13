@@ -12,6 +12,8 @@
 #include "pros/screen.h"
 #include "pros/screen.hpp"
 #include <cstddef>
+#include <cstdint>
+#include <future>
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -27,30 +29,34 @@ pros::MotorGroup leftMotors({-12,-1,11}, pros::MotorGearset::blue); // left moto
 pros::MotorGroup rightMotors({10, 19, -20}, pros::MotorGearset::blue); // right motor group - ports 6, 7, 9 (reversed)
 
 
-pros::Motor lowIntake(3,pros::MotorGearset::blue);
-pros::Motor topintake(2,pros::MotorGearset::rpm_200);
+pros::Motor lowIntake(13,pros::MotorGearset::blue);
+pros::Motor topintake(6,pros::MotorGearset::blue);
 pros::Motor Outtake(9,pros::MotorGearset::rpm_200);
 pros::GPS gps(17);
-pros::ADIDigitalOut piston('G');
-pros::ADIDigitalOut piston1('C');
-pros::ADIDigitalOut piston2('H');
+
+pros::ADIDigitalOut piston('G'); // scrapper
+pros::ADIDigitalOut piston1('H'); // decore wing
+pros::ADIDigitalOut piston2('C'); //middle goal descore
+pros::ADIDigitalOut piston3('B'); //middle goal descore
 
 
+
+pros::Distance distanceSensor(5);
 
 
 
 // Inertial Sensor on port 13
-pros::Imu imu(8);               
+pros::Imu imu(7);               
 
 // tracking wheels. 
 // horizontal tracking wheel encoder. Rotation sensor, port 20, not reversed
 // pros::Rotation horizontalEnc(15);
 // vertical tracking wheel encoder. Rotation sensor, port 11, reversed
-pros::Rotation verticalEnc(4);
+pros::Rotation verticalEnc(2);
 // horizontal tracking wheel. 2.75" diameter, 5.75" offset, back of the robot (negative)
 //lemlib::TrackingWheel horizontal(&horizontalEnc, lemlib::Omniwheel::NEW_275, 4.5);
 // vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
-lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, 5.5);
+lemlib::TrackingWheel vertical(&verticalEnc, lemlib::Omniwheel::NEW_275, -0.5);
 
 // drivetrain settings
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
@@ -62,19 +68,21 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 );
 
 // lateral motion controller
-lemlib::ControllerSettings linearController(3.5, // proportional gain (kP)
+//KP : 3.7 KD 0
+// 4 KP ,0 KD  is the optimal value
+lemlib::ControllerSettings linearController(4, // proportional gain (kP) 3.7
                                             0, // integral gain (kI)
-                                            0, // derivative gain (kD)
+                                            20, // derivative gain (kD)
                                             0, // anti windup
                                             0, // small error range, in inches
                                             0, // small error range timeout, in milliseconds
                                             0, // large error range, in inches
-                                            0, // large error range timeout, in milliseconds
+                                            0, // large er ror range timeout, in milliseconds
                                             0 // maximum acceleration (slew)
 );
 
 // angular motion controller
-lemlib::ControllerSettings angularController(5.2, // proportional gain (kP)
+lemlib::ControllerSettings angularController(6.5 , // proportional gain (kP)
                                              0, // integral gain (kI)
                                              45, // derivative gain (kD)
                                              0, // anti windup
@@ -168,22 +176,28 @@ void competition_initialize() {
 ASSET(example_txt); // '.' replaced with "_" to make c++ happy
 
 
-void intakeblocks() {
+void intakeBlocks() {
 
-    topintake.move_velocity(200);   
-    lowIntake.move_velocity(600);
-    Outtake.move_velocity(200); 
-    piston1.set_value(false);
+    topintake.move_velocity(0); 
+    lowIntake.move_velocity(-600);
+   
 
 }
 
-void highgoalscoring(){
+void stopIntakeBlocks() {
+    topintake.move_velocity(0);   
+    lowIntake.move_velocity(0);
+    Outtake.move_velocity(0); 
+
+}
+
+void goalHighScoring(){
 
 
-    piston1.set_value(true);
-    topintake.move_velocity(200); 
-    lowIntake.move_velocity(600);
-    Outtake.move_velocity(200);
+    
+    topintake.move_velocity(-600); 
+    lowIntake.move_velocity(-600);
+
 
 }
 
@@ -196,7 +210,6 @@ void midgoalscoring(){
 }
 
 void lowgoalscoring(){
-    piston1.set_value(false);
 
     topintake.move_velocity(-200); 
     lowIntake.move_velocity(-600);
@@ -215,6 +228,13 @@ void hooddown(){
 
 }
 
+void scraperDown(){
+    piston2.set_value(true);
+}
+
+void scraperUp(){
+    piston2.set_value(false);
+}
 
 
 void rightlong(){
@@ -551,7 +571,7 @@ void skillsfirstgoal(){
 
     hooddown();
 
-    intakeblocks();
+    intakeBlocks();
 
     // second scrapping 
     chassis.moveToPoint(32, 130, 3000,{.maxSpeed=70});
@@ -757,22 +777,720 @@ void skillsfirstgoal(){
 
 }
 
-void solopp(){
+void fourballrightrush(){
+
+    chassis.setPose(0,0,0);
+
+    intakeBlocks();
+
+    chassis.moveToPoint(0, 39, 750);
+    chassis.turnToHeading(90,750,{.maxSpeed=80});
+    pros::delay(100);
+
+    piston.set_value(false);
+
+    chassis.moveToPoint(25, 34, 1750);
+
+    chassis.moveToPoint(-20, 33, 1000, {.forwards=false, .minSpeed=70});
+
+    piston.set_value(true);
+
+    pros::delay(1000);
+
+    goalHighScoring();
+
+    pros::delay(2000);
+
+    chassis.moveToPoint(-6, 32, 750);
+
+    chassis.turnToHeading(44,750,{.maxSpeed=50});
+    chassis.moveToPoint(-11, 27, 750, {.forwards=false, .minSpeed=70});
+    chassis.turnToHeading(90, 750);
+
+    piston1.set_value(true);
+
+    chassis.moveToPoint(-24, 25, 1000, {.forwards=false, .minSpeed=70});
+}
+
+void distancesensortest(){
+    chassis.setPose(0,0,0);
+
+
+//     while(true) {
+//         int dist = distanceSensor.get_distance();
+
+//         if (dist <= 475) break;
+
+//         chassis.arcade(-90, 0);
+//         pros::delay(10);
+//     }
+// chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+// chassis.arcade(0,0);
+
+float targetHeading = chassis.getPose().theta;  // save starting angle
+
+    while (true) {
+        int dist = distanceSensor.get_distance();
+        if (dist <= 550 && dist > 0) break;
+
+
+        int errorDist = dist - 150;
+        int forward = errorDist * 0.3;
+
+        // clamp speed so it doesn't go crazy
+        if (forward > 90) forward = 90;
+        if (forward < 0) forward = 0;  // minimum so robot keeps moving
+
+
+        float currentHeading = chassis.getPose().theta;
+
+        // error = how far we drifted
+        float error = targetHeading - currentHeading;
+
+        // simple P correction (THIS is the "PID")
+        float kP = 4.0;   // tune this later
+        float turn = error * kP;
+
+        // clamp so it doesn’t oversteer
+        if (turn > 50) turn = 50;
+        if (turn < -50) turn = -50;
+
+        chassis.arcade(-forward, turn);
+
+        pros::delay(10);
+    }
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    chassis.arcade(0, 0);
+
+
+
+
+
+}
+
+void skills_full_auton_75(){ 
+
+
+    int second_scoring_x = -64.;
+    int third_and_fourth_scraper_x = -64;
+
+    intakeBlocks();
+
     //rightlong();
     //rightlongtomiddle();
     // middletoleftlong();
 
     //sevenballright();
 
-    skillsfirstgoal();
+    //skillsfirstgoal();
+    // Start Position 
+    piston.set_value(false);
+    chassis.setPose(0,0,0); 
+
+    // Move to Loader 1 (Bottom Right)
+    chassis.moveToPoint(0, 10,750);
+    chassis.turnToHeading(90,750);
+
+    chassis.moveToPoint(31,10, 1000);
+    //fixPosition(500,1);
+    scraperDown();
+    chassis.turnToHeading(180,750);
+
+
+
+
+    //Loader 1 Matchloading or Scraping (Bottom Right)
+    chassis.moveToPoint(31, -17,1500, {.maxSpeed=70}); // On Loader 1  
+
+    chassis.moveToPoint(31, 0, 500, {.forwards=false});
+
+    chassis.moveToPoint(31, -17,1000, {.maxSpeed=70}); // On Loader 1  
+
+    //chassis.moveToPoint(30, 0, 1500, {.forwards=false});
+
+
+
+
+    // //Entering Loader 1 again (Bottom right)
+    // chassis.moveToPoint(30, 0, 750, {.forwards=false});
+
+    // chassis.moveToPoint(30, -15,2500); // On Loader 1 
+    // Begin the movement to the other side
+    chassis.moveToPoint(30, 0, 1500, {.forwards=false});
+
+    scraperUp();
+    chassis.turnToHeading(45,750);
+    piston.set_value(true);
+
+    // Turning and moving to other side (Lower right side of goal)
+    chassis.moveToPose(42, 29, 0, 2000);
+
+    chassis.moveToPose(42, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
+    //chassis.turnToHeading(275, 750);
+    chassis.turnToHeading(315,1000);
+    chassis.moveToPoint(30, 105, 1000);
+    // pros::delay(750);
+
+    // float targetHeading1 = chassis.getPose().theta;  // save starting angle
+
+    // while (true){
+    //     int dist = distanceSensor.get_distance();
+    //     if (dist >= 300 && dist > 0) break;
+
+
+    //     int errorDist = dist - 150;
+    //     int forward = errorDist * 0.3;
+
+    //     // clamp speed so it doesn't go crazy
+    //     // if (forward > 90) forward = 90;
+    //     // if (forward < 20) forward = 20;  // minimum so robot keeps moving
+
+
+    //     float currentHeading = chassis.getPose().theta;
+
+    //     // error = how far we drifted
+    //     float error = targetHeading1 - currentHeading;
+
+    //     // simple P correction (THIS is the "PID")
+    //     float kP = 2.0;   // tune this later
+    //     float turn = error * kP;
+
+    //     // clamp so it doesn’t oversteer
+    //     if (turn > 50) turn = 50;
+    //     if (turn < -50) turn = -50;
+
+    //     chassis.arcade(70, turn);
+
+    //     pros::delay(10);
+
+    // }
+    // chassis.arcade(0, 0);
+
+    // pros::delay(750);
+    // chassis.setPose(31,91,-90);
+    
+
+    chassis.turnToHeading(0,750);
+
+    // Scoring the long goal
+    chassis.moveToPose(30, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
+    pros::delay(750);
+
+
+    goalHighScoring();
+    pros::delay(2500);
+    piston.set_value(false);
+
+
+    intakeBlocks();
+   
+
+    // Matchload or scrape Loader 2 (Top Right Side)
+    scraperDown();
+    chassis.moveToPoint(30, 130, 1500, {.maxSpeed=70});
+    chassis.moveToPoint(30, 100, 500, {.forwards=false,.maxSpeed=60});
+    chassis.moveToPoint(30, 130, 2000, {.maxSpeed=50});
+
+
+    // chassis.turnToHeading(10,300);
+    // chassis.turnToHeading(350,300);00ok
+    // chassis.moveToPoint(30, 130, 500, {.maxSpeed=70});
+
+    // chassis.turnToHeading(bn10,300);
+    // chassis.turnToHeading(350,300);
+
+    
+
+
+
+
+    // Score again
+    chassis.moveToPoint(31, 83, 1500,{.forwards=false,.minSpeed=50});
+    pros::delay(750);
+    goalHighScoring();
+
+    pros::delay(1000); 
+    
+    topintake.move_velocity(600); 
+    lowIntake.move_velocity(600);
+    //scraperDown();
+    pros::delay(300);
+
+    goalHighScoring();
+    pros::delay(2000);
+    
+
+  
+
+//     scraperUp();    
+//     // Move to left side
+    chassis.moveToPoint(29, 95, 750);
+
+    intakeBlocks();
+
+
+
+    chassis.turnToHeading(90,750);
+
+    pros::delay(750);
+    float targetHeading = chassis.getPose().theta;  // save starting angle
+
+    while (true) {
+        int dist = distanceSensor.get_distance();
+        if (dist <= 600 && dist > 0) break;
+
+
+        int errorDist = dist - 150;
+        int forward = errorDist * 0.3;
+
+        // clamp speed so it doesn't go crazy
+        if (forward > 90) forward = 90;
+        if (forward < 0) forward = 0;  // minimum so robot keeps moving
+
+
+        float currentHeading = chassis.getPose().theta;
+
+        // error = how far we drifted
+        float error = targetHeading - currentHeading;
+
+        // simple P correction (THIS is the "PID")
+        float kP = 2.0;   // tune this later
+        float turn = error * kP;
+
+        // clamp so it doesn’t oversteer
+        if (turn > 50) turn = 50;
+        if (turn < -50) turn = -50;
+
+        chassis.arcade(-forward, turn);
+
+        pros::delay(10);
+    }
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    chassis.arcade(0, 0);
+
+
+    pros::delay(500);
+
+
+
+
+    //chassis.moveToPoint(third_and_fourth_scraper_x, 94, 2000);
+    ////fixPosition_neg_x(500, 1);
+    chassis.turnToHeading(0,750);
+    intakeBlocks();
+
+    scraperDown();
+    pros::delay(1000); 
+
+
+    // 3rd Scraper
+    chassis.moveToPoint(third_and_fourth_scraper_x , 130, 2000,{.maxSpeed=70});
+
+//     // Moving to other side
+    chassis.moveToPoint(third_and_fourth_scraper_x , 95, 750,{.forwards=false});
+
+    chassis.moveToPoint(third_and_fourth_scraper_x, 130, 2000,{.maxSpeed=60});
+
+    chassis.moveToPoint(third_and_fourth_scraper_x, 95, 800,{.forwards=false});
+    pros::delay(750);
+        
+    piston.set_value(true);
+
+    chassis.turnToHeading(225,750);
+    chassis.moveToPose(-78, 72, 180,2000);
+    chassis.moveToPose(-77, 8, 180,2000);
+
+
+//     /// Prepare to Score 
+
+    chassis.turnToHeading(135,750);
+    chassis.moveToPoint(third_and_fourth_scraper_x, 0, 1000);
+
+    pros::delay(750);
+
+    //float targetHeading2 = chassis.getPose().theta;  // save starting angle
+
+    // while (true){
+    //     int dist = distanceSensor.get_distance();
+    //     if (dist >= 300 && dist > 0) break;
+
+
+    //     int errorDist = dist - 150;
+    //     int forward = errorDist * 0.3;
+
+    //     // clamp speed so it doesn't go crazy
+    //     // if (forward > 90) forward = 90;
+    //     // if (forward < 20) forward = 20;  // minimum so robot keeps moving
+
+
+    //     float currentHeading = chassis.getPose().theta;
+
+    //     // error = how far we drifted
+    //     float error = targetHeading2 - currentHeading;
+
+    //     // simple P correction (THIS is the "PID")
+    //     float kP = 2.0;   // tune this later
+    //     float turn = error * kP;
+
+    //     // clamp so it doesn’t oversteer
+    //     if (turn > 50) turn = 50;
+    //     if (turn < -50) turn = -50;
+
+    //     chassis.arcade(70, turn);
+
+    //     pros::delay(10);
+
+    // }
+    // chassis.arcade(0, 0);
+
+    // return;
+
+
+    chassis.turnToHeading(180,1000, {.maxSpeed=60});
+
+
+//     //Second  Score 
+
+    chassis.moveToPoint(second_scoring_x, 30, 2000,{.forwards=false});
+    pros::delay(750);
+    piston.set_value(false);
+
+    goalHighScoring();
+
+    pros::delay(1000); 
+
+    
+    topintake.move_velocity(600); 
+    lowIntake.move_velocity(600);
+    //scraperDown();
+    pros::delay(300);
+
+    goalHighScoring();
+    pros::delay(1500);
+    
+
+//     scraperDown();
+//     pros::delay(1000);
+
+
+//     // 4th Scraper
+
+
+    chassis.moveToPoint(third_and_fourth_scraper_x+1 , -30, 1500,{.maxSpeed= 70});
+
+    chassis.moveToPoint(second_scoring_x, 0, 500,{.forwards=false});
+
+    chassis.moveToPoint(third_and_fourth_scraper_x+1 , -30, 2000,{.maxSpeed= 70});
+
+    intakeBlocks();
+
+    // Score again 
+
+    chassis.moveToPoint(second_scoring_x, 30, 2000,{.forwards=false});
+    pros::delay(750);
+
+    goalHighScoring();
+
+    pros::delay(1000); 
+
+
+    goalHighScoring();
+    pros::delay(1500);
+    
+    
+
+
+    piston.set_value(true);
+
+    // Parking 
+    chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
+    chassis.turnToHeading(90,750, {.maxSpeed=1000});
+    chassis.moveToPoint(-16, 8, 1000, {.maxSpeed=1000});
+    chassis.turnToHeading(180,750, {.maxSpeed=1000});
+    lowIntake.move_velocity(600);
+    topintake.move_velocity((600));
+    //chassis.moveToPoint(-16, 20, 1000, {.forwards=false, .maxSpeed=1000});
+    chassis.moveToPoint(-16, -20000 , 20000, {.maxSpeed=1000});
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+    
+
+//     //printCoordinates();
+
+// }
+// void sevenballRight_NEW(){
+//     piston.set_value(false);
+
+//     chassis.setPose(0,0,0); 
+//     intakeBlocks();
+//     // Go to Right Lower Loader
+//     chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+//     chassis.turnToHeading(30,500,{.maxSpeed=60});
+//     chassis.moveToPoint(8,25, 750,{.maxSpeed=100});
+//     pros::delay(500);
+//     scraperDown();
+//     chassis.turnToHeading(135,500,{.maxSpeed=60});
+//     chassis.moveToPoint(36,9, 750,{.maxSpeed=100});
+//     chassis.turnToHeading(180,500,{.maxSpeed=60});
+//     //chassis.moveToPoint(32,-30, 1250,{.maxSpeed=100}); // Scraping
+
+
+//     chassis.moveToPoint(31,24, 1250,{.forwards=false,.maxSpeed=100}); // Scoring 
+//     pros::delay(500);
+//     scraperUp();
+//     goalHighScoring();
+//     pros::delay(1000);
+
+//     chassis.moveToPoint(31,8, 750,{.maxSpeed=100});
+//     chassis.turnToHeading(125,500,{.maxSpeed=60});
+
+//     chassis.moveToPoint(20,14, 750,{.forwards=false,.maxSpeed=100});
+//     chassis.turnToHeading(180,500,{.maxSpeed=60});
+//     piston.set_value(true);
+//     chassis.moveToPoint(19,38, 1500,{.forwards=false,.maxSpeed=100}); //   
+
+}
+
+void rightSideDoubleGoal_NEW(){
+
+    piston.set_value(true);
+
+    chassis.setPose(0,0,0); 
+    intakeBlocks();
+    // Go to Right Lower Loader
+    chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+    chassis.turnToHeading(27,500,{.maxSpeed=60});
+    chassis.moveToPoint(7,26, 1250,{.maxSpeed=100});
+    pros::delay(500);
+    piston.set_value(false);
+
+    chassis.turnToHeading(315,400,{.maxSpeed=60});
+    piston.set_value(true);
+    chassis.moveToPoint(-4,40, 1000,{.maxSpeed=100});// Low Scoring
+    lowgoalscoring();
+    pros::delay(1000);
+
+   
+    chassis.moveToPoint(4,29, 750,{.forwards=false,.maxSpeed=100});
+    pros::delay(500);
+
+    chassis.turnToHeading(135,500,{.maxSpeed=60});
+    chassis.moveToPoint(30,9, 1250,{.maxSpeed=100});
+    piston.set_value(false);
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+    chassis.moveToPoint(30,-40, 1500,{.maxSpeed=60}); // Scraping
+
+
+    chassis.moveToPoint(30,24, 1500,{.forwards=false,.maxSpeed=100}); // Scoring 
+    pros::delay(500);
+    goalHighScoring();
+    pros::delay(2000);
+    chassis.moveToPoint(30,8, 1000,{.maxSpeed=100});
+    chassis.turnToHeading(125,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(20,14, 500,{.forwards=false,.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+    //piston.set_value(true);
+    chassis.moveToPoint(19,38, 1500,{.forwards=false,.maxSpeed=100}); //   
+
+
+    
+
+}
+void solopp(){
+    //goalHighScoring(); // Should be commented out later..
+    //rightlong();
+    //rightlongtomiddle();
+    // middleto leftlong();
+    //sevenballright();
+    //skillsfirstgoal();
+    // Start Position 
+    chassis.setPose(0,0,0); 
+
+    // Go to Right Lower Loader
+    chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+    chassis.turnToHeading(90,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(30,10, 750,{.maxSpeed=100});
+    //fixPosition(500,1);
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+
+    scraperDown();
+    intakeBlocks();
+
+    //Right Lower Loader Scraping
+    chassis.moveToPoint(30, -16,2000); // On Loader 1 
+
+    // reverse to score first set 
+    chassis.moveToPoint(30, 25, 2000, {.forwards=false,.maxSpeed=75});
+    scraperUp();
+    pros::delay(500);
+
+    goalHighScoring();
+    pros::delay(750);
+
+    return;
+
+    //moving forward afer scoring
+    chassis.moveToPoint(30, 11,400,{.maxSpeed=75}); 
+    //turn to get sencond set
+    chassis.turnToHeading(315,750,{.maxSpeed=75});
+    intakeBlocks();
+    //get to score positison
+    chassis.moveToPoint(10, 21,750,{.maxSpeed=75});
+
+    pros::delay(500);
+    scraperDown();
+    pros::delay(1000);
+    chassis.turnToHeading(315,400);
+
+
+
+    scraperUp();
+    chassis.moveToPoint(-3, 26,3000,{.maxSpeed=75}); 
+    lowgoalscoring();
+    pros::delay(500);
+
+
+    chassis.moveToPoint(4.7, 17.6,3000,{.forwards=false}); 
+
+
+
+    // chassis.turnToHeading(270,400,{.maxSpeed=80});
+    // intakeBlocks();
+
+    // chassis.moveToPoint(-37, 25.5,1500,{.maxSpeed=80}); 
+    // pros::delay(750);
+    // scraperDown();
+
+    // chassis.turnToHeading(240, 500,{.maxSpeed=80});
+
+    // chassis.moveToPoint(-64, 5,800,{.maxSpeed=80});
+
+    // chassis.turnToHeading(180,500,{.maxSpeed=80});
+
+    // chassis.moveToPoint(-64, -15,1000,{.maxSpeed=80});
+
+    // // chassis.turnToHeading(180,750);
+
+    // chassis.moveToPoint(-64, 30,2000,{.forwards=false}); 
+    // pros::delay(500);
+
+    // // chassis.moveToPoint(-64, 14,2000);// Scoring
+    // goalHighScoring();
+
+    // printCoordinates();
+
+    //printCoordinates();
+
 
 
 }
 
+void ruiguansoloopp(){
+
+    chassis.setPose(0,0,0);
+
+    intakeBlocks();
+
+    chassis.moveToPoint(0, 39, 750);
+    chassis.turnToHeading(90,750,{.maxSpeed=80});
+    pros::delay(100);
+
+    piston.set_value(false);
+
+    chassis.moveToPoint(25, 34, 1250,{.maxSpeed=60});
+
+    chassis.moveToPoint(-20, 33, 1000, {.forwards=false, .minSpeed=70});
+
+    piston.set_value(true);
+
+    pros::delay(1000);
+
+    goalHighScoring();
+
+    pros::delay(1000);
+
+    intakeBlocks();
+    chassis.moveToPoint(-8, 34, 500);
+    chassis.turnToHeading(212, 500);
+
+    chassis.moveToPoint(-24, 6,1000);
+
+    chassis.turnToHeading(180, 500);
+
+    chassis.moveToPoint(-20, -44, 1000);
+
+    chassis.turnToHeading(134,500);
+
+    chassis.moveToPoint(-35, -24, 1000,{.forwards=false});
+    pros::delay(250);
+
+    piston3.set_value(true);
+    pros::delay(1000);
+
+    goalHighScoring();
+    piston3.set_value(false);
+    intakeBlocks();
+
+
+    chassis.moveToPoint(0, -63, 1000);
+
+    chassis.turnToHeading(90, 750);
+
+    piston.set_value(false);
+
+
+    chassis.moveToPoint(50, -56,1250,{.minSpeed=70});
+
+    chassis.moveToPoint(-20, -60,1000,{.forwards=false});
+    pros::delay(500);
+
+    goalHighScoring();
+
+
+
+
+
+}
+
+
+
+
+
 void autonomous() {
 
-    solopp();
 
+    //distancesensortest();
+    //fourballrightrush();
+
+    
+
+
+    skills_full_auton_75();
+    //ruiguansoloopp();
+    //solopp();
+    //sevenballRight_NEW(); // Working
+    //rightSideDoubleGoal_NEW();
+
+    // chassis.setPose(0,0,0);
+    // chassis.moveToPoint(0, 50, 5000);
+
+
+
+    //sevenballright();
 
     // chassis.moveToPoint(21.85, -28, 2000,{.forwards = false, .minSpeed=60});
     // piston1.set_value(true);
@@ -813,12 +1531,19 @@ void autonomous() {
     // chassis.turnToHeading(-149, 1000,{.minSpeed=50});
 
 }
+
+
 /**
  * Runs in driver control
  */
 int pistonvalue = true;
 void opcontrol() {
-    
+
+    //solopp();
+    //skills_full_auton_75();
+    //intakeBlocks();
+    //goalHighScoring();
+
 
 
     // controller
@@ -831,68 +1556,80 @@ void opcontrol() {
         chassis.arcade(leftY, rightX, false, 0.75);
         // delay to save resources
         pros::delay(25);
+
+        controller.print(0,0, "X: %f, Y: %f", chassis.getPose().x,chassis.getPose().y);// x
+        //printf(1, "Y: %f", chassis.getPose().y); // y
+        //printf(2, "Theta: %f", chassis.getPose().theta); // heading
+        
+        // log position telemetry
+        lemlib::telemetrySink()->info("Chassis pose: {}", chassis.getPose());
+        // delay to save resources
+        pros::delay(50);
+
+        //pros::ADIDigitalOut piston('G'); // scrapper
+        //pros::ADIDigitalOut piston1('H'); // decore wing
+        //pros::ADIDigitalOut piston2('C'); //middle goal descore
+        //pros::ADIDigitalOut piston3('B'); //middle goal dropper
 		
 
 
+		if (controller.get_digital(DIGITAL_L2)) {
+
+            lowIntake.move_velocity(-600);
+        }
+        else if (controller.get_digital(DIGITAL_DOWN)){
+
+            lowIntake.move_velocity(600);
+
+        }
+        else{
+
+            lowIntake.move_velocity(0);
+
+        }
+
+        if (controller.get_digital(DIGITAL_R1)) {
+            piston1.set_value(true);
+        }
+        else if (controller.get_digital(DIGITAL_R2)) {
+            piston1.set_value(false);
+        }
+
+        if (controller.get_digital(DIGITAL_X)) {
+            piston.set_value(true);
+        }
+        else if (controller.get_digital(DIGITAL_B)) {
+            piston.set_value(false);
+        }
+
+        if (controller.get_digital(DIGITAL_UP)) {
+            piston3.set_value(true);
+        }
+        else if (controller.get_digital(DIGITAL_DOWN)) {
+            piston3.set_value(false);
+        }
+
+        if (controller.get_digital(DIGITAL_RIGHT)) {
+            piston2.set_value(true);
+        }
+        else if (controller.get_digital(DIGITAL_LEFT)) {
+            piston2.set_value(false);
+        }
+
 		if (controller.get_digital(DIGITAL_L1)) {
 
-            piston1.set_value(false);
-			topintake.move_velocity(200); 
-            lowIntake.move_velocity(600);
-            Outtake.move_velocity(-200); 
-           
+			topintake.move_velocity(-600);   
 
 		}
-		else if (controller.get_digital(DIGITAL_L2)) {
+        else{
 
-			topintake.move_velocity(200);   
-            lowIntake.move_velocity(600);
-            Outtake.move_velocity(200); 
-            piston1.set_value(false);
-
-		}
-        else if (controller.get_digital(DIGITAL_R1)) {
-
-
-            piston1.set_value(false);
-
-			topintake.move_velocity(-200); 
-            lowIntake.move_velocity(-600);
-            Outtake.move_velocity(-200); 
-		}
-		else if (controller.get_digital(DIGITAL_R2)) {
-
-            piston1.set_value(true);
-			topintake.move_velocity(200); 
-            lowIntake.move_velocity(600);
-            Outtake.move_velocity(200); 
-
-		}
-		else {
-			topintake.move_velocity(0); 
-            lowIntake.move_velocity(0);
-            Outtake.move_velocity(0);
-		}
-        
-		if (controller.get_digital(DIGITAL_UP)) {
-
-            piston.set_value(pistonvalue);
-            pistonvalue = !pistonvalue;
-            pros::delay(250);
-
-		}
-		if (controller.get_digital(DIGITAL_DOWN)) {
-			piston.set_value(false);
-		}
-
-	    if (controller.get_digital(DIGITAL_X)) {
-			piston2.set_value(true);
-		}
-		if (controller.get_digital(DIGITAL_B)) {
-
-            piston2.set_value(false);
-            
+            topintake.move_velocity(0);  
         }
+
+
+        
+        
+    
 
 		
 		pros::delay(2);
