@@ -871,8 +871,8 @@ float targetHeading = chassis.getPose().theta;  // save starting angle
 void skills_full_auton_75(){ 
 
 
-    int second_scoring_x = -64.;
-    int third_and_fourth_scraper_x = -64;
+    int second_scoring_x = -64;  // offset adjusted for field variation
+    int third_and_fourth_scraper_x = -64;  // offset adjusted for field variation
 
     intakeBlocks();
 
