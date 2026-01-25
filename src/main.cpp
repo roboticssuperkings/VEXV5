@@ -831,7 +831,7 @@ float targetHeading = chassis.getPose().theta;  // save starting angle
 
     while (true) {
         int dist = distanceSensor.get_distance();
-        if (dist <= 550 && dist > 0) break;
+        if (dist <= 500 && dist > 0) break;
 
 
         int errorDist = dist - 150;
