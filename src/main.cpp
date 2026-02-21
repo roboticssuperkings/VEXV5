@@ -750,7 +750,7 @@ void skillsfirstgoal(){
 
     chassis.moveToPoint(-16, 40,500,{.forwards=false,.maxSpeed=50});
 
-    chassis.moveToPoint(-16, -35,4000,{.maxSpeed=127});
+    chassis.moveToPoint(-16, -35,4000,{.maxSpeed=500000});
 
 
 
