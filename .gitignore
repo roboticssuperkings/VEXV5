@@ -1,0 +1,10 @@
+.cache/
+bin/
+build/
+*.o
+*.a
+*.d
+*.elf
+*.bin
+*.hex
+.vscode/ipch/
