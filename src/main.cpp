@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <future>
 
-// Todo: Add Sensor Fusion Code
+// Todo: Add Sensor Fusion Code - Test this
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
