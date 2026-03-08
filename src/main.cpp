@@ -17,6 +17,9 @@
 #include <future>
 
 // Todo: Add Sensor Fusion Code - Test this
+// git add . 
+// git commit -m "Comments"
+// git push 
 
 // controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -34,6 +37,7 @@ pros::MotorGroup rightMotors({10, 19, -20}, pros::MotorGearset::blue); // right 
 
 pros::Motor lowIntake(13,pros::MotorGearset::blue);
 pros::Motor topintake(6,pros::MotorGearset::blue);
+pros::Motor indexer(15,pros::MotorGearset::blue);
 pros::Motor Outtake(9,pros::MotorGearset::rpm_200);
 pros::GPS gps(17);
 
@@ -877,230 +881,71 @@ float targetHeading = chassis.getPose().theta;  // save starting angle
 
 }
 
+void driveWithDistanceHoldHeading(pros::Distance& sensor,
+                                  int stopDistance,
+                                  bool stopWhenGreaterOrEqual,
+                                  bool reverseDrive,
+                                  int forwardOffset = 0,
+                                  float forwardScale = 1.0f,
+                                  float turnKp = 4.0f) {
+    const float targetHeading = chassis.getPose().theta;
+
+    while (true) {
+        const int dist = sensor.get_distance();
+        const bool reachedTarget =
+            stopWhenGreaterOrEqual ? (dist >= stopDistance) : (dist <= stopDistance);
+        if (dist > 0 && reachedTarget) break;
+
+        int forward = static_cast<int>((dist - 150) * forwardScale) + forwardOffset;
+
+        if (forward > 90) forward = 90;
+        if (forward < 0) forward = 0;
+
+        const float currentHeading = chassis.getPose().theta;
+        const float error = targetHeading - currentHeading;
+
+        float turn = error * turnKp;
+        if (turn > 50) turn = 50;
+        if (turn < -50) turn = -50;
+
+        chassis.arcade(reverseDrive ? -forward : forward, turn);
+        pros::delay(10);
+    }
+
+    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    chassis.arcade(0, 0);
+}
+
 void states_auto(){
     chassis.setPose(0,0,0);
 
     intakeBlocks();
 
-    //first forward
-    float targetHeading = chassis.getPose().theta;  // save starting angle
+    // first forward
+    driveWithDistanceHoldHeading(distanceSensor, 585, true, false);
 
-    while (true) {
-        int dist = distanceSensor.get_distance();
-        if (dist >= 585 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist ;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 4.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
-
-    //turn 90 deg
+    // turn 90 deg
     chassis.turnToHeading(90, 750);
-
     pros::delay(1000);
 
-
-    float targetHeading1 = chassis.getPose().theta;  // save starting angle
-
-    while (true) {
-        int dist = distanceSensorfront.get_distance();
-        if (dist <= 650 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist ;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading1 - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 4.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
+    driveWithDistanceHoldHeading(distanceSensorfront, 650, false, false);
 
     chassis.turnToHeading(180,500);
-
-
-
-
     pros::delay(1000);
 
-
-
-
-    float targetHeading2 = chassis.getPose().theta;  // save starting angle
-
-    while (true) {
-        int dist = distanceSensorfront.get_distance();
-        if (dist <= 200 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist ;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading2 - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 4.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
+    driveWithDistanceHoldHeading(distanceSensorfront, 200, false, false);
 
     chassis.turnToHeading(180,500);
+    pros::delay(1000);
 
-
-     pros::delay(1000);
-
-
-    float targetHeading3 = chassis.getPose().theta;  // save starting angle
-
-
-
-    while (true) {
-        int dist = distanceSensorfront.get_distance();
-        if (dist >= 500 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist + 50 ;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading3 - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 4.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(-forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
-
-
-
+    driveWithDistanceHoldHeading(distanceSensorfront, 500, true, true, 50);
 
     chassis.turnToHeading(90,500);
-
     pros::delay(1000);
 
-
-
-
-
-    float targetHeading4 = chassis.getPose().theta;  // save starting angle
-
-    while (true) {
-        int dist = distanceSensorfront.get_distance();
-        if (dist <= 150 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist +30 ;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading4 - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 4.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
+    driveWithDistanceHoldHeading(distanceSensorfront, 150, false, false, 30);
 
     chassis.turnToHeading(0, 750);
-
-
-
-
-
-
-
 }
 
 void skills_full_auton_75(){ 
@@ -1839,6 +1684,9 @@ void opcontrol() {
 		if (controller.get_digital(DIGITAL_L2)) {
 
             lowIntake.move_velocity(-600);
+
+                
+            
         }
         else if (controller.get_digital(DIGITAL_DOWN)){
 
@@ -1848,6 +1696,7 @@ void opcontrol() {
         else{
 
             lowIntake.move_velocity(0);
+
 
         }
 
@@ -1882,11 +1731,13 @@ void opcontrol() {
 		if (controller.get_digital(DIGITAL_L1)) {
 
 			topintake.move_velocity(-600);   
+            indexer.move_velocity(600);
 
 		}
         else{
 
             topintake.move_velocity(0);  
+            indexer.move_velocity(0);
         }
 
 
