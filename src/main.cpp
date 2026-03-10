@@ -12,8 +12,10 @@
 #include "pros/rtos.hpp"
 #include "pros/screen.h"
 #include "pros/screen.hpp"
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <future>
 
 // Todo: Add Sensor Fusion Code - Test this
@@ -78,9 +80,9 @@ lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 // lateral motion controller
 //KP : 3.7 KD 0
 // 4 KP ,0 KD  is the optimal value
-lemlib::ControllerSettings linearController(4, // proportional gain (kP) 3.7
+lemlib::ControllerSettings linearController(6, // proportional gain (kP) 3.7
                                             0, // integral gain (kI)
-                                            20, // derivative gain (kD)
+                                            50, // derivative gain (kD)
                                             0, // anti windup
                                             0, // small error range, in inches
                                             0, // small error range timeout, in milliseconds
@@ -916,6 +918,45 @@ void driveWithDistanceHoldHeading(pros::Distance& sensor,
     chassis.arcade(0, 0);
 }
 
+void moveToGpsTargetMeters(double targetGpsXMeters, double targetGpsYMeters, int timeoutMs) {
+    constexpr double kMetersToInches = 39.37;
+
+    // 1.5x, 0.3 y
+    // 0.3x, 0.3 y
+
+    const auto currentGpsPosition = gps.get_position();
+    const auto currentPose = chassis.getPose();
+
+    const double deltaXInches = (targetGpsXMeters - currentGpsPosition.x) * kMetersToInches * -1;
+    //const double deltaYInches = abs(targetGpsYMeters - currentGpsPosition.y) * kMetersToInches;
+
+    chassis.moveToPoint(currentPose.x + deltaXInches, currentPose.y , timeoutMs);
+}
+
+void moveToGpsTargetMetersWithCorrection(double expectedGpsXMeters,
+                                         double expectedGpsYMeters,
+                                         double acceptanceThresholdGpsXMeters,
+                                         double acceptanceThresholdGpsYMeters,
+                                         double correctionTargetGpsXMeters,
+                                         double correctionTargetGpsYMeters,
+                                         int primaryTimeoutMs,
+                                         int correctionTimeoutMs,
+                                         int gpsSettleDelayMs) {
+    moveToGpsTargetMeters(expectedGpsXMeters, expectedGpsYMeters, primaryTimeoutMs);
+    pros::delay(gpsSettleDelayMs);
+
+    const auto currentGpsPosition = gps.get_position();
+    const bool xOutsideAcceptance =
+        std::fabs(currentGpsPosition.x - expectedGpsXMeters) > acceptanceThresholdGpsXMeters;
+    const bool yOutsideAcceptance =
+        std::fabs(currentGpsPosition.y - expectedGpsYMeters) > acceptanceThresholdGpsYMeters;
+
+    if (xOutsideAcceptance || yOutsideAcceptance) {
+        moveToGpsTargetMeters(correctionTargetGpsXMeters, correctionTargetGpsYMeters, correctionTimeoutMs);
+        pros::delay(gpsSettleDelayMs);
+    }
+}
+
 void states_auto(){
     chassis.setPose(0,0,0);
 
@@ -968,34 +1009,40 @@ void skills_full_auton_75(){
 
     //skillsfirstgoal();
     // Start Position 
-    piston.set_value(false);
+    piston.set_value(false); 
     chassis.setPose(0,0,0); 
 
     // heading = 170 , 1.15 and y = 0.13
  
 
     // Move to Loader 1 (Bottom Right)
-    chassis.moveToPoint(0, 10,750);
+    //chassis.moveToPoint(0, 10,750);
+    driveWithDistanceHoldHeading(distanceSensor, 350, true, false);
+
+    
+
     chassis.turnToHeading(90,750);
-
+    
     pros::delay(1000);
-    int distance_for_goal1 = (0.95 - gps.get_position().y ) * 39.37 ;
-
-    chassis.moveToPoint(distance_for_goal1,10, 1000);
-
-    int current_position = gps.get_position().y;
-    if (current_position < 1.01)
-    {    
-        distance_for_goal1 = (1.04 - current_position) * 39.37 ;
-        int current_pos = chassis.getPose().x;
-        chassis.moveToPoint(current_pos + distance_for_goal1, 10, 100);
-    }
+    // moveToGpsTargetMetersWithCorrection(
+    //     1, 1.14,   // expected GPS X,Y in meters
+    //     0.03, 0.03,  // accepted absolute error in meters (X,Y)
+    //     0.0, 1.04,   // correction GPS X,Y in meters
+    //     1000, 100,   // primary and correction timeouts
+    //     500          // GPS settle delay before checking
+    // );
 
     //distance_for_goal1 = (1.01 - gps.get_position().y ) * 39.37 ;
     
 
     //chassis.moveToPoint(distance_for_goal1,10, 1000);
 
+
+    //driveWithDistanceHoldHeading(distanceSensorfront, 700, false, false);
+    chassis.moveToPoint(31, 10, 1000);
+
+    
+ 
 
     //fixPosition(500,1);
     scraperDown();
@@ -1011,6 +1058,8 @@ void skills_full_auton_75(){
 
     chassis.moveToPoint(31, -17,1000, {.maxSpeed=70}); // On Loader 1  
 
+
+
     //chassis.moveToPoint(30, 0, 1500, {.forwards=false});
 
 
@@ -1021,19 +1070,19 @@ void skills_full_auton_75(){
 
     // chassis.moveToPoint(30, -15,2500); // On Loader 1 
     // Begin the movement to the other side
-    chassis.moveToPoint(30, 0, 1500, {.forwards=false});
+    chassis.moveToPoint(30, 10, 1500, {.forwards=false});
 
     scraperUp();
     chassis.turnToHeading(45,750);
     piston.set_value(true);
 
     // Turning and moving to other side (Lower right side of goal)
-    chassis.moveToPose(42, 29, 0, 2000);
+    chassis.moveToPose(43, 29, 0, 2000);
 
-    chassis.moveToPose(42, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
+    chassis.moveToPose(43, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
     //chassis.turnToHeading(275, 750);
     chassis.turnToHeading(315,1000);
-    chassis.moveToPoint(30, 105, 1000);
+    chassis.moveToPoint(28, 105, 1000);
     // pros::delay(750);
 
     // float targetHeading1 = chassis.getPose().theta;  // save starting angle
@@ -1078,7 +1127,7 @@ void skills_full_auton_75(){
     chassis.turnToHeading(0,750);
 
     // Scoring the long goal
-    chassis.moveToPose(30, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
+    chassis.moveToPose(28, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
     pros::delay(750);
 
 
@@ -1092,9 +1141,9 @@ void skills_full_auton_75(){
 
     // Matchload or scrape Loader 2 (Top Right Side)
     scraperDown();
-    chassis.moveToPoint(30, 130, 1500, {.maxSpeed=70});
-    chassis.moveToPoint(30, 100, 500, {.forwards=false,.maxSpeed=60});
-    chassis.moveToPoint(30, 130, 2000, {.maxSpeed=50});
+    chassis.moveToPoint(28, 120, 1500, {.maxSpeed=70});
+    chassis.moveToPoint(28, 100, 500, {.forwards=false,.maxSpeed=60});
+    chassis.moveToPoint(28, 120, 2000, {.maxSpeed=50});
 
 
     // chassis.turnToHeading(10,300);
@@ -1110,7 +1159,7 @@ void skills_full_auton_75(){
 
 
     // Score again
-    chassis.moveToPoint(31, 83, 1500,{.forwards=false,.minSpeed=50});
+    chassis.moveToPoint(28, 75, 1500,{.forwards=false,.minSpeed=50});
     pros::delay(750);
     goalHighScoring();
 
@@ -1138,40 +1187,7 @@ void skills_full_auton_75(){
     chassis.turnToHeading(90,750);
 
     pros::delay(750);
-    float targetHeading = chassis.getPose().theta;  // save starting angle
-
-    while (true) {
-        int dist = distanceSensor.get_distance();
-        if (dist <= 600 && dist > 0) break;
-
-
-        int errorDist = dist - 150;
-        int forward = errorDist * 0.3;
-
-        // clamp speed so it doesn't go crazy
-        if (forward > 90) forward = 90;
-        if (forward < 0) forward = 0;  // minimum so robot keeps moving
-
-
-        float currentHeading = chassis.getPose().theta;
-
-        // error = how far we drifted
-        float error = targetHeading - currentHeading;
-
-        // simple P correction (THIS is the "PID")
-        float kP = 2.0;   // tune this later
-        float turn = error * kP;
-
-        // clamp so it doesn’t oversteer
-        if (turn > 50) turn = 50;
-        if (turn < -50) turn = -50;
-
-        chassis.arcade(-forward, turn);
-
-        pros::delay(10);
-    }
-    chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    chassis.arcade(0, 0);
+    driveWithDistanceHoldHeading(distanceSensor, 600, false, true, 0, 0.3f, 2.0f);
 
 
     pros::delay(500);
@@ -1281,16 +1297,16 @@ void skills_full_auton_75(){
 //     // 4th Scraper
 
 
-    chassis.moveToPoint(third_and_fourth_scraper_x+1 , -30, 1500,{.maxSpeed= 70});
+    chassis.moveToPoint(third_and_fourth_scraper_x+3 , -30, 1500,{.maxSpeed= 70});
 
     chassis.moveToPoint(second_scoring_x, 0, 500,{.forwards=false});
 
-    chassis.moveToPoint(third_and_fourth_scraper_x+1 , -30, 2000,{.maxSpeed= 70});
+    chassis.moveToPoint(third_and_fourth_scraper_x+3 , -30, 2000,{.maxSpeed= 70});
 
     intakeBlocks();
 
     // Score again 
-
+ 
     chassis.moveToPoint(second_scoring_x, 30, 2000,{.forwards=false});
     pros::delay(750);
 
@@ -1578,8 +1594,21 @@ void ruiguansoloopp(){
 
 
 void autonomous() {
-    states_auto();
+    //states_auto();
+    // chassis.setPose(0,0,0);
 
+    // moveToGpsTargetMeters(0.3,0.6,2000);
+    skills_full_auton_75();
+
+    //chassis.moveToPoint(0, 50,3000);
+
+
+
+    //chassis.moveToPoint(0, 100, 3000);
+    // driveWithDistanceHoldHeading(distanceSensor, 1200, true, false);
+    // pros::delay(1000);
+    // driveWithDistanceHoldHeading(distanceSensorfront, 810, false, false);
+    
 
     //distancesensortest();
     //fourballrightrush();
