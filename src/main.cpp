@@ -1055,20 +1055,6 @@ void skills_full_auton_75(){
     piston.set_value(false); 
     chassis.setPose(0,0,0); 
 
-    /// RESETTING Calibration using distance sensor
-    //check distance if distance is greater than expected or less then reset calibration
-    const int measuredDistance = distanceSensor.get_distance();
-    const int distanceErrorMm = measuredDistance - 356;
-    if (measuredDistance > 0 && std::abs(distanceErrorMm) > 20) {
-        lemlib::Pose pose = chassis.getPose();
-        // If sensor reads larger than expected, robot is farther away.
-        // Flip the sign here if your sensor is mounted on the opposite side.
-        pose.y -= distanceErrorMm * kMmToInches;
-        chassis.setPose(pose.x, pose.y, pose.theta);
-    }
-
-
-
     // heading = 170 , 1.15 and y = 0.13
  
 
