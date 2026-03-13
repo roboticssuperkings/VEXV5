@@ -215,6 +215,25 @@ void goalHighScoring(){
 
 
 }
+void unjam(){
+
+
+    
+    topintake.move_velocity(600); 
+    lowIntake.move_velocity(600);
+
+
+}
+
+void goalHighScoringmid(){
+
+
+    
+    topintake.move_velocity(-200); 
+    lowIntake.move_velocity(-600);
+
+
+}
 
 void midgoalscoring(){
     piston1.set_value(false);
@@ -827,6 +846,29 @@ void fourballrightrush(){
     chassis.moveToPoint(-24, 25, 1000, {.forwards=false, .minSpeed=70});
 }
 
+void parking(){
+     // Parking 
+    chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
+    chassis.turnToHeading(90,750, {.maxSpeed=1000});
+    chassis.moveToPoint(-16, 8, 1000, {.maxSpeed=1000});
+    chassis.turnToHeading(180,750, {.maxSpeed=1000});
+    lowIntake.move_velocity(600);
+    topintake.move_velocity((600));
+    //chassis.moveToPoint(-16, 20, 1000, {.forwards=false, .maxSpeed=1000});
+    chassis.moveToPoint(-16, -20000 , 20000, {.maxSpeed=1000});
+
+}
+
+void parking_back(){
+     // Parking 
+    chassis.setPose(-64,23,180);
+    chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
+    chassis.turnToHeading(290,750, {.maxSpeed=1000});
+    chassis.moveToPose(-25, -11, 270, 1500, {.forwards=false});
+    chassis.moveToPoint(-10, -12, 2000, { .forwards=false, .maxSpeed=1000});
+
+}
+
 void distancesensortest(){
     chassis.setPose(0,0,0);
 
@@ -992,10 +1034,10 @@ void states_auto(){
 void skills_full_auton_75(){ 
 
 
-    int second_scoring_x = -64.;
-    int third_and_fourth_scraper_x = -64;
+    int second_scoring_x = -64;
+    int third_and_fourth_scraper_x = -62;
 
-    //x= 1 , y= 0.40
+    //x= 1 , y= 0.40fgh
     //x= 1, y = 1 
 
 
@@ -1009,15 +1051,31 @@ void skills_full_auton_75(){
 
     //skillsfirstgoal();
     // Start Position 
+    constexpr float kMmToInches = 1.0 / 25.4;
     piston.set_value(false); 
     chassis.setPose(0,0,0); 
+
+    /// RESETTING Calibration using distance sensor
+    //check distance if distance is greater than expected or less then reset calibration
+    const int measuredDistance = distanceSensor.get_distance();
+    const int distanceErrorMm = measuredDistance - 356;
+    if (measuredDistance > 0 && std::abs(distanceErrorMm) > 20) {
+        lemlib::Pose pose = chassis.getPose();
+        // If sensor reads larger than expected, robot is farther away.
+        // Flip the sign here if your sensor is mounted on the opposite side.
+        pose.y -= distanceErrorMm * kMmToInches;
+        chassis.setPose(pose.x, pose.y, pose.theta);
+    }
+
+
 
     // heading = 170 , 1.15 and y = 0.13
  
 
     // Move to Loader 1 (Bottom Right)
-    //chassis.moveToPoint(0, 10,750);
-    driveWithDistanceHoldHeading(distanceSensor, 350, true, false);
+    chassis.moveToPoint(0, 10,750);
+
+    //driveWithDistanceHoldHeading(distanceSensor, 350, true, false);
 
     
 
@@ -1077,12 +1135,12 @@ void skills_full_auton_75(){
     piston.set_value(true);
 
     // Turning and moving to other side (Lower right side of goal)
-    chassis.moveToPose(43, 29, 0, 2000);
+    chassis.moveToPose(45, 27, 0, 2000);
 
-    chassis.moveToPose(43, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
+    chassis.moveToPose(45, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
     //chassis.turnToHeading(275, 750);
     chassis.turnToHeading(315,1000);
-    chassis.moveToPoint(28, 105, 1000);
+    chassis.moveToPoint(30, 105, 1000);
     // pros::delay(750);
 
     // float targetHeading1 = chassis.getPose().theta;  // save starting angle
@@ -1127,7 +1185,7 @@ void skills_full_auton_75(){
     chassis.turnToHeading(0,750);
 
     // Scoring the long goal
-    chassis.moveToPose(28, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
+    chassis.moveToPose(30, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
     pros::delay(750);
 
 
@@ -1141,9 +1199,9 @@ void skills_full_auton_75(){
 
     // Matchload or scrape Loader 2 (Top Right Side)
     scraperDown();
-    chassis.moveToPoint(28, 120, 1500, {.maxSpeed=70});
-    chassis.moveToPoint(28, 100, 500, {.forwards=false,.maxSpeed=60});
-    chassis.moveToPoint(28, 120, 2000, {.maxSpeed=50});
+    chassis.moveToPoint(30, 120, 2000, {.maxSpeed=70});
+    chassis.moveToPoint(30, 100, 500, {.forwards=false,.maxSpeed=60});
+    chassis.moveToPoint(30, 120, 1500, {.maxSpeed=50});
 
 
     // chassis.turnToHeading(10,300);
@@ -1159,11 +1217,12 @@ void skills_full_auton_75(){
 
 
     // Score again
-    chassis.moveToPoint(28, 75, 1500,{.forwards=false,.minSpeed=50});
+    chassis.moveToPoint(30, 75, 1500,{.forwards=false,.minSpeed=50});
     pros::delay(750);
     goalHighScoring();
 
     pros::delay(1000); 
+    chassis.setPose(32,81,0);
     
     topintake.move_velocity(600); 
     lowIntake.move_velocity(600);
@@ -1172,6 +1231,7 @@ void skills_full_auton_75(){
 
     goalHighScoring();
     pros::delay(2000);
+
     
 
   
@@ -1208,16 +1268,17 @@ void skills_full_auton_75(){
     chassis.moveToPoint(third_and_fourth_scraper_x , 130, 2000,{.maxSpeed=70});
 
 //     // Moving to other side
-    chassis.moveToPoint(third_and_fourth_scraper_x , 95, 750,{.forwards=false});
+    chassis.moveToPoint(third_and_fourth_scraper_x , 110, 750,{.forwards=false});
 
     chassis.moveToPoint(third_and_fourth_scraper_x, 130, 2000,{.maxSpeed=60});
 
-    chassis.moveToPoint(third_and_fourth_scraper_x, 95, 800,{.forwards=false});
-    pros::delay(750);
+    chassis.moveToPoint(third_and_fourth_scraper_x, 95, 1250,{.forwards=false});
+
         
-    piston.set_value(true);
+
 
     chassis.turnToHeading(225,750);
+    piston.set_value(true);
     chassis.moveToPose(-78, 72, 180,2000);
     chassis.moveToPose(-77, 8, 180,2000);
 
@@ -1272,7 +1333,7 @@ void skills_full_auton_75(){
 
 //     //Second  Score 
 
-    chassis.moveToPoint(second_scoring_x, 30, 2000,{.forwards=false});
+    chassis.moveToPoint(second_scoring_x, 40, 2000,{.forwards=false});
     pros::delay(750);
     piston.set_value(false);
 
@@ -1297,11 +1358,11 @@ void skills_full_auton_75(){
 //     // 4th Scraper
 
 
-    chassis.moveToPoint(third_and_fourth_scraper_x+3 , -30, 1500,{.maxSpeed= 70});
+    chassis.moveToPoint(third_and_fourth_scraper_x , -30, 1500,{.maxSpeed= 70});
 
     chassis.moveToPoint(second_scoring_x, 0, 500,{.forwards=false});
 
-    chassis.moveToPoint(third_and_fourth_scraper_x+3 , -30, 2000,{.maxSpeed= 70});
+    chassis.moveToPoint(third_and_fourth_scraper_x , -30, 2000,{.maxSpeed= 70});
 
     intakeBlocks();
 
@@ -1325,18 +1386,9 @@ void skills_full_auton_75(){
 
     piston.set_value(true);
 
-    // Parking 
-    chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
-    chassis.turnToHeading(90,750, {.maxSpeed=1000});
-    chassis.moveToPoint(-16, 8, 1000, {.maxSpeed=1000});
-    chassis.turnToHeading(180,750, {.maxSpeed=1000});
-    lowIntake.move_velocity(600);
-    topintake.move_velocity((600));
-    //chassis.moveToPoint(-16, 20, 1000, {.forwards=false, .maxSpeed=1000});
-    chassis.moveToPoint(-16, -20000 , 20000, {.maxSpeed=1000});
 
-
-
+    //parking();
+    parking_back();
 
 
 
@@ -1352,37 +1404,108 @@ void skills_full_auton_75(){
 
 //     //printCoordinates();
 
-// }
-// void sevenballRight_NEW(){
-//     piston.set_value(false);
-
-//     chassis.setPose(0,0,0); 
-//     intakeBlocks();
-//     // Go to Right Lower Loader
-//     chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
-//     chassis.turnToHeading(30,500,{.maxSpeed=60});
-//     chassis.moveToPoint(8,25, 750,{.maxSpeed=100});
-//     pros::delay(500);
-//     scraperDown();
-//     chassis.turnToHeading(135,500,{.maxSpeed=60});
-//     chassis.moveToPoint(36,9, 750,{.maxSpeed=100});
-//     chassis.turnToHeading(180,500,{.maxSpeed=60});
-//     //chassis.moveToPoint(32,-30, 1250,{.maxSpeed=100}); // Scraping
+}
 
 
-//     chassis.moveToPoint(31,24, 1250,{.forwards=false,.maxSpeed=100}); // Scoring 
-//     pros::delay(500);
-//     scraperUp();
-//     goalHighScoring();
-//     pros::delay(1000);
+void fourballRight_NEW(){
 
-//     chassis.moveToPoint(31,8, 750,{.maxSpeed=100});
-//     chassis.turnToHeading(125,500,{.maxSpeed=60});
 
-//     chassis.moveToPoint(20,14, 750,{.forwards=false,.maxSpeed=100});
-//     chassis.turnToHeading(180,500,{.maxSpeed=60});
-//     piston.set_value(true);
-//     chassis.moveToPoint(19,38, 1500,{.forwards=false,.maxSpeed=100}); //   
+    chassis.setPose(0,0,0); 
+    intakeBlocks();
+    // Go to Right Lower Loader
+    chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+    chassis.turnToHeading(30,500,{.maxSpeed=60});
+    chassis.moveToPoint(8,25, 750,{.maxSpeed=100});
+    pros::delay(500);
+    piston.set_value(false);
+    chassis.turnToHeading(135,500,{.maxSpeed=60});
+    chassis.moveToPoint(36,9, 750,{.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+    //chassis.moveToPoint(32,-30, 1250,{.maxSpeed=100}); // Scraping
+
+
+    chassis.moveToPoint(31,30, 1250,{.forwards=false,.maxSpeed=100}); // Scoring 
+    pros::delay(500);
+    scraperUp();
+    goalHighScoring();
+    pros::delay(1000);
+
+    chassis.moveToPoint(31,8, 750,{.maxSpeed=100});
+    chassis.turnToHeading(125,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(20,14, 750,{.forwards=false,.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+    piston1.set_value(true);
+    chassis.moveToPoint(19,38, 1500,{.forwards=false,.maxSpeed=100}); //   
+
+}
+
+
+void sevenballstates(){
+
+
+    chassis.setPose(0,0,0); 
+    intakeBlocks();
+    // Go to Right Lower Loader
+    chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+    chassis.turnToHeading(25,500,{.maxSpeed=60});
+    chassis.moveToPoint(5,25, 750,{.maxSpeed=100});
+    pros::delay(500);
+    piston.set_value(false);
+    chassis.turnToHeading(135,500,{.maxSpeed=60});
+    chassis.moveToPoint(34,9, 750,{.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(30,-30, 1250,{.maxSpeed=100}); // Scraping
+
+
+    chassis.moveToPoint(30,30, 1250,{.forwards=false,.maxSpeed=100}); // Scoring 
+    pros::delay(500);
+    scraperUp();
+    goalHighScoring();
+    pros::delay(2000);
+
+    chassis.moveToPoint(30,8, 750,{.maxSpeed=100});
+    chassis.turnToHeading(125,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(18,14, 750,{.forwards=false,.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+    piston1.set_value(true);
+    chassis.moveToPoint(18,38, 1500,{.forwards=false,.maxSpeed=100}); //   
+
+}
+
+void sevenballstatesleft(){
+
+
+    chassis.setPose(0,0,0);
+    intakeBlocks();
+    // Go to Left Lower Loader
+    chassis.moveToPoint(0, 10,500,{.maxSpeed=100});
+    chassis.turnToHeading(335,500,{.maxSpeed=60});
+    chassis.moveToPoint(-5,25, 750,{.maxSpeed=100});
+    pros::delay(500);
+    piston.set_value(false);
+    chassis.turnToHeading(225,500,{.maxSpeed=60});
+    chassis.moveToPoint(-34,9, 750,{.maxSpeed=100});
+    chassis.turnToHeading(180,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(-30,-30, 1750,{.maxSpeed=100}); // Scraping
+
+
+    chassis.moveToPoint(-30,30, 1250,{.forwards=false,.maxSpeed=100}); // Scoring
+    pros::delay(500);
+    scraperUp();
+    goalHighScoring();
+    pros::delay(2000);
+
+    chassis.moveToPoint(-30,8, 750,{.maxSpeed=100});
+    chassis.turnToHeading(235,500,{.maxSpeed=60});
+
+    chassis.moveToPoint(-18,14, 750,{.forwards=false,.maxSpeed=100});
+    chassis.turnToHeading(0,500,{.maxSpeed=60});
+    piston1.set_value(true);
+    chassis.moveToPoint(-18,38, 1500,{.maxSpeed=100}); //
 
 }
 
@@ -1536,50 +1659,67 @@ void ruiguansoloopp(){
 
     chassis.moveToPoint(25, 34, 1250,{.maxSpeed=60});
 
-    chassis.moveToPoint(-20, 33, 1000, {.forwards=false, .minSpeed=70});
+    chassis.moveToPoint(-20, 35, 2000, {.forwards=false, .minSpeed=40});
+
 
     piston.set_value(true);
 
-    pros::delay(1000);
+    pros::delay(750);
 
     goalHighScoring();
 
-    pros::delay(1000);
+    pros::delay(1250);
+
 
     intakeBlocks();
     chassis.moveToPoint(-8, 34, 500);
     chassis.turnToHeading(212, 500);
 
     chassis.moveToPoint(-24, 6,1000);
+    pros::delay(500);
+    piston.set_value(false);
 
     chassis.turnToHeading(180, 500);
+    piston.set_value(true);
 
-    chassis.moveToPoint(-20, -44, 1000);
+    chassis.moveToPoint(-20, -49, 1000,{.maxSpeed=70});
+    pros::delay(1000);
+    piston.set_value(false);
 
-    chassis.turnToHeading(134,500);
+    chassis.turnToHeading(155,500);
 
-    chassis.moveToPoint(-35, -24, 1000,{.forwards=false});
+    chassis.moveToPoint(-33, -22, 1000,{.forwards=false});
+    //piston3.set_value(true);
     pros::delay(250);
 
-    piston3.set_value(true);
-    pros::delay(1000);
 
+
+    unjam();
+    pros::delay(250);
     goalHighScoring();
-    piston3.set_value(false);
+
+    //goalHighScoringmid();
+    //piston3.set_value(false);
+
+    pros::delay(750);
     intakeBlocks();
+    
 
 
-    chassis.moveToPoint(0, -63, 1000);
+    chassis.moveToPoint(-2, -58, 1000);
 
     chassis.turnToHeading(90, 750);
 
     piston.set_value(false);
 
 
-    chassis.moveToPoint(50, -56,1250,{.minSpeed=70});
+    chassis.moveToPoint(25, -58,1250,{.minSpeed=40});
 
-    chassis.moveToPoint(-20, -60,1000,{.forwards=false});
+    chassis.moveToPoint(-30, -60,2000,{.forwards=false});
     pros::delay(500);
+
+    unjam();
+    pros::delay(250);
 
     goalHighScoring();
 
@@ -1599,8 +1739,9 @@ void autonomous() {
 
     // moveToGpsTargetMeters(0.3,0.6,2000);
     skills_full_auton_75();
-
     //chassis.moveToPoint(0, 50,3000);
+    //solopp();
+    //ruiguansoloopp();
 
 
 
@@ -1612,7 +1753,8 @@ void autonomous() {
 
     //distancesensortest();
     //fourballrightrush();
-
+    //chassis.setPose(0,0,0);
+    //chassis.moveToPoint(0, -40, 3000,{.forwards=false,.maxSpeed=90});
     
 
 
@@ -1620,6 +1762,9 @@ void autonomous() {
     //ruiguansoloopp();
     //solopp();
     //sevenballRight_NEW(); // Working
+    //fourballRight_NEW();
+    //sevenballstates();
+    //sevenballstatesleft();
     //rightSideDoubleGoal_NEW();
 
     // chassis.setPose(0,0,0);
