@@ -2,6 +2,7 @@
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "lemlib/chassis/chassis.hpp"
 #include "lemlib/chassis/trackingWheel.hpp"
+#include "lemlib/pose.hpp"
 #include "pros/abstract_motor.hpp"
 #include "pros/adi.hpp"
 #include "pros/ai_vision.hpp"
@@ -184,6 +185,7 @@ void disabled() {
 void competition_initialize() {
 
     piston.set_value(true);
+    piston1.set_value(true);
 }
 
 // get a path used for pure pursuit
@@ -206,15 +208,6 @@ void stopIntakeBlocks() {
 
 }
 
-void goalHighScoring(){
-
-
-    
-    topintake.move_velocity(-600); 
-    lowIntake.move_velocity(-600);
-
-
-}
 void unjam(){
 
 
@@ -224,6 +217,22 @@ void unjam(){
 
 
 }
+
+void goalHighScoring(){
+
+    if (lowIntake.get_actual_velocity() < 100) {
+        unjam();
+        pros::delay(250);
+    }
+
+
+    
+    topintake.move_velocity(-600); 
+    lowIntake.move_velocity(-600);
+
+
+}
+
 
 void goalHighScoringmid(){
 
@@ -861,11 +870,13 @@ void parking(){
 
 void parking_back(){
      // Parking 
-    chassis.setPose(-64,23,180);
+    //chassis.setPose(-64,23,180);
     chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
     chassis.turnToHeading(290,750, {.maxSpeed=1000});
-    chassis.moveToPose(-25, -11, 270, 1500, {.forwards=false});
-    chassis.moveToPoint(-10, -12, 2000, { .forwards=false, .maxSpeed=1000});
+
+    chassis.moveToPose(-25, -11, 270, 1500, {.forwards=false,. maxSpeed=10000});
+
+    chassis.moveToPoint(-11, -12, 2000, { .forwards=false, .maxSpeed=10000});
 
 }
 
@@ -932,6 +943,7 @@ void driveWithDistanceHoldHeading(pros::Distance& sensor,
                                   int forwardOffset = 0,
                                   float forwardScale = 1.0f,
                                   float turnKp = 4.0f) {
+    constexpr float kDistanceDriveSpeedMultiplier = 1.2f;
     const float targetHeading = chassis.getPose().theta;
 
     while (true) {
@@ -940,9 +952,10 @@ void driveWithDistanceHoldHeading(pros::Distance& sensor,
             stopWhenGreaterOrEqual ? (dist >= stopDistance) : (dist <= stopDistance);
         if (dist > 0 && reachedTarget) break;
 
-        int forward = static_cast<int>((dist - 150) * forwardScale) + forwardOffset;
+        int forward = static_cast<int>(((dist - 150) * forwardScale + forwardOffset) *
+                                       kDistanceDriveSpeedMultiplier);
 
-        if (forward > 90) forward = 90;
+        if (forward > 108) forward = 108;
         if (forward < 0) forward = 0;
 
         const float currentHeading = chassis.getPose().theta;
@@ -1059,6 +1072,7 @@ void skills_full_auton_75(){
  
 
     // Move to Loader 1 (Bottom Right)
+    piston1.set_value(false);
     chassis.moveToPoint(0, 10,750);
 
     //driveWithDistanceHoldHeading(distanceSensor, 350, true, false);
@@ -1096,11 +1110,11 @@ void skills_full_auton_75(){
 
 
     //Loader 1 Matchloading or Scraping (Bottom Right)
-    chassis.moveToPoint(31, -17,1500, {.maxSpeed=70}); // On Loader 1  
+    chassis.moveToPoint(31, -17,2000, {.maxSpeed=70}); // On Loader 1  
 
     chassis.moveToPoint(31, 0, 500, {.forwards=false});
 
-    chassis.moveToPoint(31, -17,1000, {.maxSpeed=70}); // On Loader 1  
+    chassis.moveToPoint(31, -17,750, {.maxSpeed=70}); // On Loader 1  
 
 
 
@@ -1123,75 +1137,46 @@ void skills_full_auton_75(){
     // Turning and moving to other side (Lower right side of goal)
     chassis.moveToPose(45, 27, 0, 2000);
 
-    chassis.moveToPose(45, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
+    chassis.moveToPose(43, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
     //chassis.turnToHeading(275, 750);
     chassis.turnToHeading(315,1000);
     chassis.moveToPoint(30, 105, 1000);
-    // pros::delay(750);
 
-    // float targetHeading1 = chassis.getPose().theta;  // save starting angle
-
-    // while (true){
-    //     int dist = distanceSensor.get_distance();
-    //     if (dist >= 300 && dist > 0) break;
-
-
-    //     int errorDist = dist - 150;
-    //     int forward = errorDist * 0.3;
-
-    //     // clamp speed so it doesn't go crazy
-    //     // if (forward > 90) forward = 90;
-    //     // if (forward < 20) forward = 20;  // minimum so robot keeps moving
-
-
-    //     float currentHeading = chassis.getPose().theta;
-
-    //     // error = how far we drifted
-    //     float error = targetHeading1 - currentHeading;
-
-    //     // simple P correction (THIS is the "PID")
-    //     float kP = 2.0;   // tune this later
-    //     float turn = error * kP;
-
-    //     // clamp so it doesn’t oversteer
-    //     if (turn > 50) turn = 50;
-    //     if (turn < -50) turn = -50;
-
-    //     chassis.arcade(70, turn);
-
-    //     pros::delay(10);
-
-    // }
-    // chassis.arcade(0, 0);
-
-    // pros::delay(750);
-    // chassis.setPose(31,91,-90);
     
 
     chassis.turnToHeading(0,750);
 
+
+
+
+
     // Scoring the long goal
     chassis.moveToPose(30, 50, 0, 3000,{.forwards=false,.maxSpeed=100});
+
+
+
+    
     pros::delay(750);
 
-
     goalHighScoring();
+
     pros::delay(2500);
     piston.set_value(false);
 
 
-    intakeBlocks();
+ 
    
-
+    intakeBlocks();
     // Matchload or scrape Loader 2 (Top Right Side)
     scraperDown();
     chassis.moveToPoint(30, 120, 2000, {.maxSpeed=70});
+
     chassis.moveToPoint(30, 100, 500, {.forwards=false,.maxSpeed=60});
-    chassis.moveToPoint(30, 120, 1500, {.maxSpeed=50});
+    chassis.moveToPoint(30, 120, 750, {.maxSpeed=50});
 
 
     // chassis.turnToHeading(10,300);
-    // chassis.turnToHeading(350,300);00ok
+    // chassis.turnToHeading(350,300);00ok 
     // chassis.moveToPoint(30, 130, 500, {.maxSpeed=70});
 
     // chassis.turnToHeading(bn10,300);
@@ -1207,11 +1192,14 @@ void skills_full_auton_75(){
     pros::delay(750);
     goalHighScoring();
 
-    pros::delay(1000); 
-    chassis.setPose(32,81,0);
+    pros::delay(1000);
+
+
+
+    lemlib::Pose heading1 = chassis.getPose(); 
+    chassis.setPose(32,81,heading1.theta);
     
-    topintake.move_velocity(600); 
-    lowIntake.move_velocity(600);
+
     //scraperDown();
     pros::delay(300);
 
@@ -1222,26 +1210,30 @@ void skills_full_auton_75(){
 
   
 
+    intakeBlocks();
 //     scraperUp();    
 //     // Move to left side
-    chassis.moveToPoint(29, 95, 750);
+    chassis.moveToPoint(32, 90, 750);
 
 
 
 
 
-    chassis.turnToHeading(90,750);
+
+    chassis.turnToHeading(90,1000,{.maxSpeed=50});
 
     pros::delay(750);
-    driveWithDistanceHoldHeading(distanceSensor, 600, false, true, 0, 0.3f, 2.0f);
 
 
-    pros::delay(500);
+    //chassis.moveToPoint(third_and_fourth_scraper_x, 94, 2000,{.forwards=false});
+    driveWithDistanceHoldHeading(distanceSensor, 700, false, true, 0, 0.3f, 2.0f);
+
+
+    pros::delay(250);
 
 
 
 
-    //chassis.moveToPoint(third_and_fourth_scraper_x, 94, 2000);
     ////fixPosition_neg_x(500, 1);
     chassis.turnToHeading(0,750);
     intakeBlocks();
@@ -1254,9 +1246,9 @@ void skills_full_auton_75(){
     chassis.moveToPoint(third_and_fourth_scraper_x , 130, 2000,{.maxSpeed=70});
 
 //     // Moving to other side
-    chassis.moveToPoint(third_and_fourth_scraper_x , 110, 750,{.forwards=false});
+    chassis.moveToPoint(third_and_fourth_scraper_x , 95, 750,{.forwards=false});
 
-    chassis.moveToPoint(third_and_fourth_scraper_x, 130, 2000,{.maxSpeed=60});
+    chassis.moveToPoint(third_and_fourth_scraper_x, 130, 1500,{.maxSpeed=60});
 
     chassis.moveToPoint(third_and_fourth_scraper_x, 95, 1250,{.forwards=false});
 
@@ -1265,8 +1257,8 @@ void skills_full_auton_75(){
 
     chassis.turnToHeading(225,750);
     piston.set_value(true);
-    chassis.moveToPose(-78, 72, 180,2000);
-    chassis.moveToPose(-77, 8, 180,2000);
+    chassis.moveToPose(-76, 72, 180,1500);
+    chassis.moveToPose(-77, 8, 180,1750);
 
 
 //     /// Prepare to Score 
@@ -1274,7 +1266,7 @@ void skills_full_auton_75(){
     chassis.turnToHeading(135,750);
     chassis.moveToPoint(third_and_fourth_scraper_x, 0, 1000);
 
-    pros::delay(750);
+    pros::delay(400);
 
     //float targetHeading2 = chassis.getPose().theta;  // save starting angle
 
