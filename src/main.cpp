@@ -1716,8 +1716,9 @@ void autonomous() {
     // chassis.setPose(0,0,0);
 
     // moveToGpsTargetMeters(0.3,0.6,2000);
-    //skills_full_auton_75();
-    parking_back();
+    skills_full_auton_75();
+    //parking_back();
+
     //chassis.moveToPoint(0, 50,3000);
     //solopp();
     //ruiguansoloopp();
