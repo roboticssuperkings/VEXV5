@@ -870,11 +870,11 @@ void parking(){
 
 void parking_back(){
      // Parking 
-    //chassis.setPose(-64,23,180);
+    chassis.setPose(-64,23,180);
     chassis.moveToPoint(-62, 8, 750, {.maxSpeed=1000});
     chassis.turnToHeading(290,750, {.maxSpeed=1000});
 
-    chassis.moveToPose(-25, -11, 270, 1500, {.forwards=false,. maxSpeed=10000});
+    chassis.moveToPose(-25, -12, 270, 1500, {.forwards=false,. maxSpeed=10000});
 
     chassis.moveToPoint(-11, -12, 2000, { .forwards=false, .maxSpeed=10000});
 
@@ -1139,8 +1139,8 @@ void skills_full_auton_75(){
 
     chassis.moveToPose(43, 100, 0, 1500, {.maxSpeed=80}); // earlier value 42 
     //chassis.turnToHeading(275, 750);
-    chassis.turnToHeading(315,1000);
-    chassis.moveToPoint(30, 105, 1000);
+    chassis.turnToHeading(315,500);
+    chassis.moveToPoint(30, 105, 750);
 
     
 
@@ -1172,7 +1172,7 @@ void skills_full_auton_75(){
     chassis.moveToPoint(30, 120, 2000, {.maxSpeed=70});
 
     chassis.moveToPoint(30, 100, 500, {.forwards=false,.maxSpeed=60});
-    chassis.moveToPoint(30, 120, 750, {.maxSpeed=50});
+    chassis.moveToPoint(30, 120, 1250, {.maxSpeed=50});
 
 
     // chassis.turnToHeading(10,300);
@@ -1716,7 +1716,8 @@ void autonomous() {
     // chassis.setPose(0,0,0);
 
     // moveToGpsTargetMeters(0.3,0.6,2000);
-    skills_full_auton_75();
+    //skills_full_auton_75();
+    parking_back();
     //chassis.moveToPoint(0, 50,3000);
     //solopp();
     //ruiguansoloopp();
@@ -1903,5 +1904,3 @@ void opcontrol() {
     }
 
 }
-
-	
